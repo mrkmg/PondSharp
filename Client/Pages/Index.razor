@@ -1,7 +1,169 @@
 ﻿@page "/"
+@using PondSharp.UserScripts
+@using System.Timers
+@inject HttpClient Http
+<!-- ReSharper disable once InconsistentNaming -->
+@inject IJSRuntime JSRuntime; 
 
-<h1>Hello, world!</h1>
 
-Welcome to your new app.
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-auto">
+            <Pond @ref="_pond" Width="300" Height="300"></Pond>
+            <div class="btn-group">
+                <button class="btn btn-primary" @onclick="StartPond" disabled="@(!IsCompiled)">Start</button>
+                <button class="btn btn-secondary" @onclick="CreateEntity" disabled="@(!IsCompiled)">Create Entity</button>
+                <button class="btn btn-danger" @onclick="StopPond" disabled="@(!IsCompiled)">Stop</button>
+            </div>
+        </div>
+        <div class="col">
+            <div id="code-editor" class="w-100" style="height: 500px;"></div>
+            <div class="btn-group">
+                <button class="btn btn-primary" @onclick="CompileSource" disabled="@(!_compilerReady)">Compile</button>
+                <button class="btn btn-secondary" @onclick="Reset" disabled="@(!IsCompiled)">Reset</button>
+            </div>
+            <pre style="text-wrap: normal">@_output</pre>
+            <div>
+                Tick MS: @(Math.Ceiling(1000 / _currentTickTime))<br />
+                Entities: @_instances.Count
+            </div>
+        </div>
+    </div>
+</div>
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+@code
+{
+    private string _output = "No Instance Loaded";
+    private string _source = "";
+    private CSharpClassCompiler _compiler;
+    private Dictionary<string, AbstractTestEntity> _instances = new Dictionary<string, AbstractTestEntity>();
+    private bool _compilerReady;
+
+    private AbstractEntityController _entityController;
+    private Pond _pond = null;
+    
+    private Timer _tickTimer;
+    private DateTime _lastTime = DateTime.Now;
+    private double _currentTickTime = 50;
+
+    private bool IsCompiled => _compiler?.HasAssembly ?? false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var types = new List<Type>
+        {
+            typeof(object),
+            typeof(AbstractTestEntity),
+            typeof(Enumerable)
+        };
+        _tickTimer = new Timer(50); // 20 tps
+        _tickTimer.Elapsed += Tick;
+        _compiler = await CSharpClassCompiler.Make(types, Http.BaseAddress);
+        _compilerReady = true;
+    }
+
+    private void Tick(object sender, ElapsedEventArgs e)
+    {
+        var diff = DateTime.Now.Subtract(_lastTime).TotalMilliseconds;
+        _lastTime = DateTime.Now;
+        _currentTickTime = diff * 0.95 + _currentTickTime * 0.05;
+        StateHasChanged();
+        foreach (var entity in _instances.Values) 
+            entity.Tick();
+        _pond.FlushChangeQueue().RunSynchronously();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CreateEditor();
+            var size = await _pond.GetSize();
+            _entityController = new TestEntityController(-size.x/2, size.x/2, -size.y/2, size.y/2);
+            _entityController.Moved += EntityControllerOnMoved;
+        }
+    }
+
+    private void EntityControllerOnMoved(object sender, (int, int) position)
+    {
+        if (!(sender is AbstractTestEntity entity)) return;
+        var (x, y) = position;
+        _pond.QueueMoveEntity(entity.Id, x, y);
+    }
+
+    private async Task CreateEditor()
+    {
+        _source = await Http.GetStringAsync("user-scripts/sample.txt");
+        await JSRuntime.InvokeVoidAsync("createEditor", "code-editor", "codeEditor");
+        await JSRuntime.InvokeVoidAsync("codeEditor.setCode", _source);
+    }
+
+    private async void CreateEntity()
+    {
+        for (var i = 0; i < 10; i++) 
+            await RealCreateEntity();
+    }
+    
+    private async Task RealCreateEntity()
+    {
+        var instance = _compiler.New<AbstractTestEntity>(
+            "PondSharp.Examples.ExampleTestEntity",
+            Guid.NewGuid().ToString(),
+            _entityController);
+
+        _instances.Add(instance.Id, instance);
+        await _pond.CreateEntity(instance.Id, 1, 1, 0xFFFFFF);
+        instance.MoveTo(0, 0);
+    }
+
+    private async void CompileSource()
+    {
+        Reset();
+        
+        try
+        {
+            _output = "Compiling";
+            StateHasChanged();
+            await Task.Delay(TimeSpan.FromMilliseconds(100));
+            
+            _source = await JSRuntime.InvokeAsync<string>("codeEditor.getCode");
+            _compiler.Compile(_source);
+            _output = "Ready";
+            
+            StateHasChanged();
+        }
+        catch (Exception e)
+        {
+            _output = e.Message;
+            StateHasChanged();
+        }
+    }
+
+    private async void StartPond()
+    {
+        _lastTime = DateTime.Now;
+        _output = "Running";
+        _tickTimer.Enabled = true;
+        await _pond.Start();
+    }
+
+    private async void StopPond()
+    {
+        _output = "Stopped";
+        _tickTimer.Enabled = false;
+        await _pond.Stop();
+    }
+
+    private void Reset()
+    {
+        foreach (var instance in _instances.Values)
+        {
+            _pond.DestroyEntity(instance.Id);
+        }
+        _instances.Clear();
+        _tickTimer.Enabled = false;
+        StopPond();
+    }
+
+
+}

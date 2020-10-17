@@ -1,0 +1,79 @@
+@using System.ComponentModel.DataAnnotations
+@inject IJSRuntime JsRuntime;
+
+<div @ref="_pondHolder" style="width: @Width; height: @Height; padding: 0"></div>
+
+@* TODO: Performance: Change writes to use a batch to reduce number of calls from wasm to js *@
+@code {
+    [Parameter][Required]
+    public int Width { get; set; }
+    
+    [Parameter][Required]
+    public int Height { get; set; }
+
+    private string _id;
+    private ElementReference _pondHolder;
+    private string Method(string method) => $"ponds.{_id}.{method}";
+    
+    private List<EntityChangeRequest> _pendingChangeRequests = new List<EntityChangeRequest>();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _id = await JsRuntime.InvokeAsync<string>("createPond", _pondHolder, Width, Height);
+        }
+    }
+    
+    public ValueTask CreateEntity(string entityId, int x, int y, int color) => 
+        JsRuntime.InvokeVoidAsync(Method("createEntity"), entityId, x, y, color);
+
+    public ValueTask DestroyEntity(string entityId) =>
+        JsRuntime.InvokeVoidAsync(Method("destroyEntity"), entityId);
+
+    public ValueTask MoveEntity(string entityId, int x, int y) =>
+        JsRuntime.InvokeVoidAsync(Method("moveEntity"), entityId, x, y);
+
+    public void QueueMoveEntity(string entityId, int x, int y) =>
+        _pendingChangeRequests.Add(new EntityChangeRequest
+        {
+            EntityId = entityId,
+            X = x,
+            Y = y
+        });
+    
+    public ValueTask<XY> GetSize() =>
+        JsRuntime.InvokeAsync<XY>(Method("getSize"));
+
+    public ValueTask Start() =>
+        JsRuntime.InvokeVoidAsync(Method("start"));
+    
+    public ValueTask Stop() =>
+        JsRuntime.InvokeVoidAsync(Method("stop"));
+
+    public async Task FlushChangeQueue()
+    {
+        if (_pendingChangeRequests.Count == 0) return;
+        await JsRuntime.InvokeVoidAsync(Method("processEntityChangeRequests"), _pendingChangeRequests);
+        _pendingChangeRequests.Clear();
+    }
+        
+        
+    // ReSharper disable InconsistentNaming ClassNeverInstantiated.Local UnusedAutoPropertyAccessor.Global ClassNeverInstantiated.Global
+#pragma warning disable 649
+    public class XY
+    {
+        public int x { get; set; }
+        public int y { get; set; }
+    }
+
+    public class EntityChangeRequest
+    {
+        public string EntityId { get; set; }
+        public int? X { get; set; }
+        public int? Y { get; set; }
+    }
+#pragma warning restore 649
+    // ReSharper restore InconsistentNaming ClassNeverInstantiated.Local UnusedAutoPropertyAccessor.Global ClassNeverInstantiated.Global
+
+}

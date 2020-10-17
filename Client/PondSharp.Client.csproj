@@ -9,11 +9,115 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="3.2.1" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Build" Version="3.2.1" PrivateAssets="all" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="3.2.1" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="3.1.9" />
     <PackageReference Include="System.Net.Http.Json" Version="3.2.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Shared\PondSharp.Shared.csproj" />
+    <ProjectReference Include="..\UserScripts\PondSharp.UserScripts.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="wwwroot\user-scripts\sample.txt" />
+    <None Remove="wwwroot\js\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="wwwroot\js\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Remove="wwwroot\js\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="wwwroot\js\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="wwwroot\js\1065.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\1134.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\1147.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\1156.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\1259.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\1448.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\1471.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\180.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\1886.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\1960.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\1961.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\2060.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\2075.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\2140.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\249.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\2571.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\2798.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\2892.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\2911.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\2911.main.js.LICENSE.txt" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\2954.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\3036.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\3585.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\3632.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\3919.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\4129.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\4368.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\4386.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\4407.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\4902.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\4912.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\4946.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\5062.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\525.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\5470.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\5593.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\5703.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\5849.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\6082.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\6241.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\6424.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\6449.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\6489.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\6587.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\6717.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\6917.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\7043.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\7287.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\7562.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\7637.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\7778.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\7835.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\8070.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\8084.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\8180.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\8183.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\8424.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\848.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\854.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\8670.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\8715.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\8719.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\8946.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\911.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\9131.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\9343.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\9398.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\9537.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\9684.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\9907.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\996.main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\main.js.LICENSE.txt" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\ttf\codicon.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\js" />
+  </ItemGroup>
+  
+  <Target Name="BuildWebAssets" BeforeTargets="Build">
+    <Message Text="Running NPM Build" />
+    <Exec Condition="$(Configuration) == 'Release'" Command="npm run build:release" />
+  </Target>
 </Project>

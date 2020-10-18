@@ -25,10 +25,10 @@ namespace PondSharp.Examples
             else
                 _thinkCooldown--;
 
-            if (_random.Next(50) == 0) 
+            if (_random.Next(100) == 0) 
             {
                 ChooseRandomDirection();
-                _thinkCooldown = 10;
+                _thinkCooldown = _random.Next(20);
             }
             MoveTo(X + _forceX, Y + _forceY);
         }
@@ -53,15 +53,16 @@ namespace PondSharp.Examples
             var (tx, ty) = entities.Aggregate((0, 0), (a, e) => (a.Item1 + e.X, a.Item2 + e.Y));
             var (groupCenterX, groupCenterY) = (tx / entities.Count, ty / entities.Count);
             
-            if (entities.Count > 20)
+            if (entities.Count > 10)
             {
                 // Move away from group center
                 (_forceX, _forceY) = GetForceDirection(X - groupCenterX, Y - groupCenterY);
-                _thinkCooldown = entities.Count > 30 ? 30 : 5;
+                _thinkCooldown = entities.Count > 20 ? 50 : 5;
             } else if (Dist(X, Y, groupCenterX, groupCenterY) > 5)
             {
                 // Move toward group center
                 (_forceX, _forceY) = GetForceDirection(groupCenterX - X, groupCenterY - Y);
+                _thinkCooldown = 10;
             }
             else
             {

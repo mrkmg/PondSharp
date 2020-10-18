@@ -1,15 +1,17 @@
 @using System.ComponentModel.DataAnnotations
 @inject IJSRuntime JsRuntime;
 
-<div @ref="_pondHolder" style="width: @Width; height: @Height; padding: 0"></div>
+<div @ref="_pondHolder" style="width: @(Width * GridSize); height: @(Height * GridSize); padding: 0"></div>
 
-@* TODO: Performance: Change writes to use a batch to reduce number of calls from wasm to js *@
 @code {
     [Parameter][Required]
     public int Width { get; set; }
     
     [Parameter][Required]
     public int Height { get; set; }
+    
+    [Parameter][Required]
+    public int GridSize { get; set; }
 
     private string _id;
     private ElementReference _pondHolder;
@@ -21,7 +23,7 @@
     {
         if (firstRender)
         {
-            _id = await JsRuntime.InvokeAsync<string>("createPond", _pondHolder, Width, Height);
+            _id = await JsRuntime.InvokeAsync<string>("createPond", _pondHolder, Width, Height, GridSize);
         }
     }
     
@@ -41,9 +43,13 @@
             X = x,
             Y = y
         });
-    
-    public ValueTask<XY> GetSize() =>
-        JsRuntime.InvokeAsync<XY>(Method("getSize"));
+
+    public void QueueChangeEntityColor(string entityId, int color) =>
+        _pendingChangeRequests.Add(new EntityChangeRequest
+        {
+            EntityId = entityId,
+            Color = color
+        });
 
     public ValueTask Start() =>
         JsRuntime.InvokeVoidAsync(Method("start"));
@@ -51,27 +57,35 @@
     public ValueTask Stop() =>
         JsRuntime.InvokeVoidAsync(Method("stop"));
 
-    public async Task FlushChangeQueue()
+    public void FlushChangeQueue()
     {
         if (_pendingChangeRequests.Count == 0) return;
-        await JsRuntime.InvokeVoidAsync(Method("processEntityChangeRequests"), _pendingChangeRequests);
+        try
+        {
+            ((IJSInProcessRuntime)JsRuntime).InvokeVoid(Method("processEntityChangeRequests"), _pendingChangeRequests);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
         _pendingChangeRequests.Clear();
     }
         
         
     // ReSharper disable InconsistentNaming ClassNeverInstantiated.Local UnusedAutoPropertyAccessor.Global ClassNeverInstantiated.Global
 #pragma warning disable 649
-    public class XY
+    public struct XY
     {
         public int x { get; set; }
         public int y { get; set; }
     }
 
-    public class EntityChangeRequest
+    public struct EntityChangeRequest
     {
         public string EntityId { get; set; }
         public int? X { get; set; }
         public int? Y { get; set; }
+        public int? Color { get; set; }
     }
 #pragma warning restore 649
     // ReSharper restore InconsistentNaming ClassNeverInstantiated.Local UnusedAutoPropertyAccessor.Global ClassNeverInstantiated.Global

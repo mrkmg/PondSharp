@@ -6,8 +6,4 @@
         <AssemblyName>PondSharp.UserScripts</AssemblyName>
     </PropertyGroup>
 
-    <ItemGroup>
-      <Folder Include="Examples" />
-    </ItemGroup>
-
 </Project>

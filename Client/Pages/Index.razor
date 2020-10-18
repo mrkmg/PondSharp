@@ -1,6 +1,8 @@
 ﻿@page "/"
 @using PondSharp.UserScripts
+@using PondSharp.Client.Pond
 @using System.Timers
+@using System.Drawing
 @inject HttpClient Http
 <!-- ReSharper disable once InconsistentNaming -->
 @inject IJSRuntime JSRuntime; 
@@ -9,11 +11,15 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-auto">
-            <Pond @ref="_pond" Width="300" Height="300"></Pond>
+            <PondCanvas @ref="_canvas" Width="@PondWidth" Height="@PondHeight" GridSize="@GridSize"></PondCanvas>
             <div class="btn-group">
                 <button class="btn btn-primary" @onclick="StartPond" disabled="@(!IsCompiled)">Start</button>
                 <button class="btn btn-secondary" @onclick="CreateEntity" disabled="@(!IsCompiled)">Create Entity</button>
                 <button class="btn btn-danger" @onclick="StopPond" disabled="@(!IsCompiled)">Stop</button>
+            </div>
+            <div>
+                TPS: <span>@(Math.Ceiling(1000 / (_manager?.CurrentTickTime ?? 1)))</span><br />
+                Entities: <span>@(_engine?.Entities.Count() ?? 0)</span>
             </div>
         </div>
         <div class="col">
@@ -22,11 +28,7 @@
                 <button class="btn btn-primary" @onclick="CompileSource" disabled="@(!_compilerReady)">Compile</button>
                 <button class="btn btn-secondary" @onclick="Reset" disabled="@(!IsCompiled)">Reset</button>
             </div>
-            <pre style="text-wrap: normal">@_output</pre>
-            <div>
-                Tick MS: @(Math.Ceiling(1000 / _currentTickTime))<br />
-                Entities: @_instances.Count
-            </div>
+            <div style="font-family: monospace">@_output</div>
         </div>
     </div>
 </div>
@@ -36,59 +38,52 @@
     private string _output = "No Instance Loaded";
     private string _source = "";
     private CSharpClassCompiler _compiler;
-    private Dictionary<string, AbstractTestEntity> _instances = new Dictionary<string, AbstractTestEntity>();
     private bool _compilerReady;
 
-    private AbstractEntityController _entityController;
-    private Pond _pond = null;
+    private PondEngine _engine;
+    private PondCanvas _canvas;
+    private PondManager _manager;
     
-    private Timer _tickTimer;
-    private DateTime _lastTime = DateTime.Now;
-    private double _currentTickTime = 50;
-
+    const int GridSize = 2;
+    const int PondWidth = 200;
+    const int PondHeight = 200;
+    
     private bool IsCompiled => _compiler?.HasAssembly ?? false;
+    
+    private readonly Random _random = new Random();
+    
+    private Timer _debugUpdateTimer = new Timer();
 
     protected override async Task OnInitializedAsync()
     {
+        _debugUpdateTimer.Elapsed += (_,__) => StateHasChanged();
         var types = new List<Type>
         {
             typeof(object),
-            typeof(AbstractTestEntity),
+            typeof(AbstractEntity),
+            typeof(System.Drawing.Color),
             typeof(Enumerable)
         };
-        _tickTimer = new Timer(50); // 20 tps
-        _tickTimer.Elapsed += Tick;
         _compiler = await CSharpClassCompiler.Make(types, Http.BaseAddress);
         _compilerReady = true;
-    }
-
-    private void Tick(object sender, ElapsedEventArgs e)
-    {
-        var diff = DateTime.Now.Subtract(_lastTime).TotalMilliseconds;
-        _lastTime = DateTime.Now;
-        _currentTickTime = diff * 0.95 + _currentTickTime * 0.05;
-        StateHasChanged();
-        foreach (var entity in _instances.Values) 
-            entity.Tick();
-        _pond.FlushChangeQueue().RunSynchronously();
+        _engine = new PondEngine(-PondWidth/2, PondWidth/2-1, -PondHeight/2, PondHeight/2-1);
+        TryCreatePondManager();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-        {
-            await CreateEditor();
-            var size = await _pond.GetSize();
-            _entityController = new TestEntityController(-size.x/2, size.x/2, -size.y/2, size.y/2);
-            _entityController.Moved += EntityControllerOnMoved;
-        }
+        if (!firstRender) return;
+        
+        await CreateEditor();
+        TryCreatePondManager();
     }
 
-    private void EntityControllerOnMoved(object sender, (int, int) position)
+    private void TryCreatePondManager()
     {
-        if (!(sender is AbstractTestEntity entity)) return;
-        var (x, y) = position;
-        _pond.QueueMoveEntity(entity.Id, x, y);
+        if (_manager == null && _engine != null && _canvas != null)
+        {
+            _manager = new PondManager(_engine, _canvas);
+        }
     }
 
     private async Task CreateEditor()
@@ -98,27 +93,29 @@
         await JSRuntime.InvokeVoidAsync("codeEditor.setCode", _source);
     }
 
-    private async void CreateEntity()
+    private void CreateEntity()
     {
-        for (var i = 0; i < 10; i++) 
-            await RealCreateEntity();
+        for (var i = 0; i < 50; i++) 
+            RealCreateEntity();
     }
     
-    private async Task RealCreateEntity()
+    private void RealCreateEntity()
     {
-        var instance = _compiler.New<AbstractTestEntity>(
-            "PondSharp.Examples.ExampleTestEntity",
+        int ColorRnd(int min) => _random.Next(min) + (0xFF - min);
+        var instance = _compiler.New<AbstractEntity>("PondSharp.Examples.ExampleEntity");
+        instance.Initialize(
             Guid.NewGuid().ToString(),
-            _entityController);
-
-        _instances.Add(instance.Id, instance);
-        await _pond.CreateEntity(instance.Id, 1, 1, 0xFFFFFF);
-        instance.MoveTo(0, 0);
+            _engine, 
+            _random.Next(-PondWidth/2, PondWidth/2-1), 
+            _random.Next(-PondHeight/2, PondHeight/2-1),
+            Color.FromArgb(ColorRnd(0x66), ColorRnd(0x66), ColorRnd(0x66)).ToArgb(),
+            20);
+        _engine.InsertEntity(instance);
     }
 
-    private async void CompileSource()
+    private async Task CompileSource()
     {
-        Reset();
+        await Reset();
         
         try
         {
@@ -139,30 +136,28 @@
         }
     }
 
-    private async void StartPond()
+    private async Task StartPond()
     {
-        _lastTime = DateTime.Now;
+        await _manager.Start();
+        _debugUpdateTimer.Start();
         _output = "Running";
-        _tickTimer.Enabled = true;
-        await _pond.Start();
     }
 
-    private async void StopPond()
+    private async Task StopPond()
     {
-        _output = "Stopped";
-        _tickTimer.Enabled = false;
-        await _pond.Stop();
+        await _manager.Stop();
+        _debugUpdateTimer.Stop();
+        _output = "Running";
     }
 
-    private void Reset()
+    private async Task Reset()
     {
-        foreach (var instance in _instances.Values)
+        foreach (var instance in _engine.Entities)
         {
-            _pond.DestroyEntity(instance.Id);
+            await _canvas.DestroyEntity(instance.Id);
         }
-        _instances.Clear();
-        _tickTimer.Enabled = false;
-        StopPond();
+        _engine.ClearAllEntities();
+        await StopPond();
     }
 
 

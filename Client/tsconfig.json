@@ -2,7 +2,7 @@
   "compilerOptions": {
     "outDir": "./wwwroot/js",
     "noImplicitAny": true,
-    "module": "es6",
+    "module": "ES6",
     "moduleResolution": "node",
     "sourceMap": true,
     "target": "es6",

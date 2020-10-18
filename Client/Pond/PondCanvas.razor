@@ -1,7 +1,7 @@
 @using System.ComponentModel.DataAnnotations
 @inject IJSRuntime JsRuntime;
 
-<div @ref="_pondHolder" style="width: @(Width * GridSize); height: @(Height * GridSize); padding: 0"></div>
+<div @ref="_pondHolder" style="width: @(Width * GridSize)px; height: @(Height * GridSize)px; padding: 0"></div>
 
 @code {
     [Parameter][Required]

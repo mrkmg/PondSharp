@@ -5,30 +5,60 @@
 @using System.Drawing
 @inject HttpClient Http
 <!-- ReSharper disable once InconsistentNaming -->
-@inject IJSRuntime JSRuntime; 
+@inject IJSRuntime JSRuntime
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
 
 
 <div class="container-fluid">
     <div class="row">
-        <div class="col-auto">
-            <PondCanvas @ref="_canvas" Width="@PondWidth" Height="@PondHeight" GridSize="@GridSize"></PondCanvas>
-            <div class="btn-group">
-                <button class="btn btn-primary" @onclick="StartPond" disabled="@(!IsCompiled)">Start</button>
-                <button class="btn btn-secondary" @onclick="CreateEntity" disabled="@(!IsCompiled)">Create Entity</button>
-                <button class="btn btn-danger" @onclick="StopPond" disabled="@(!IsCompiled)">Stop</button>
-            </div>
-            <div>
-                TPS: <span>@(Math.Ceiling(1000 / (_manager?.CurrentTickTime ?? 1)))</span><br />
-                Entities: <span>@(_engine?.Entities.Count() ?? 0)</span>
+        <div class="col">
+            <h1>PondSharp</h1>
+            <div class="blockquote">
+                An alpha techdemo of in-browser C# (.NET Standard) compiliation and injection into WASM.
             </div>
         </div>
-        <div class="col">
-            <div id="code-editor" class="w-100" style="height: 500px;"></div>
+    </div>
+    <div class="row">
+        <div class="col-auto" style="width: @(PondWidth * GridSize + 10)px">
+            <PondCanvas @ref="_canvas" Width="@PondWidth" Height="@PondHeight" GridSize="@GridSize"></PondCanvas>
             <div class="btn-group">
                 <button class="btn btn-primary" @onclick="CompileSource" disabled="@(!_compilerReady)">Compile</button>
-                <button class="btn btn-secondary" @onclick="Reset" disabled="@(!IsCompiled)">Reset</button>
+                <button class="btn btn-success" @onclick="StartPond" disabled="@(!IsCompiled)">Start</button>
+                <button class="btn btn-warning" @onclick="StopPond" disabled="@(!IsCompiled)">Stop</button>
+                <button class="btn btn-danger" @onclick="Reset" disabled="@(!IsCompiled)">Reset</button>
             </div>
-            <div style="font-family: monospace">@_output</div>
+            @if (IsCompiled)
+            {
+                <h3>Create Entities:</h3>
+                @foreach (var (type, name) in _availableEntityTypes)
+                {
+                    
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text">@name</span>
+                        </div>
+                        <input class="form-control" type="number" @bind="_countToCreate[type]" min="1" />
+                        <div class="input-group-append">
+                            <button class="btn btn-info" @onclick="@(e => CreateEntity(type))">Create</button>
+                        </div>
+                    </div>
+                }
+            }
+            <div>
+                <h3>Stats:</h3>
+                <div style="font-family: monospace">TPS: <span>@(Math.Ceiling(1000 / (_manager?.CurrentTickTime ?? 1)))</span></div>
+                <div style="font-family: monospace">Entities: <span>@(_engine?.Entities.Count() ?? 0)</span></div>
+                <div style="font-family: monospace">@_output</div>
+            </div>
+        </div>
+        <div class="col overflow-hidden">
+            <div class="btn-group btn-group-sm">
+                @foreach (var name in _sources.Keys)
+                {
+                    <button class="nav-item btn @(_selectedSource == name ? "btn-primary" : "btn-secondary")" @onclick="@(e => SelectSource(name))">@name</button>
+                }
+            </div>
+            <div id="code-editor" class="w-auto" style="min-height: 500px; height: calc(100vh - 200px)"></div>
         </div>
     </div>
 </div>
@@ -36,17 +66,21 @@
 @code
 {
     private string _output = "No Instance Loaded";
-    private string _source = "";
+    private Dictionary<string, string> _sources = new Dictionary<string, string>();
+    private string _selectedSource = string.Empty;
     private CSharpClassCompiler _compiler;
     private bool _compilerReady;
-
+    
+    private (string, string)[] _availableEntityTypes = new (string, string)[0];
+    private Dictionary<string, int> _countToCreate = new Dictionary<string, int>();
+    
     private PondEngine _engine;
     private PondCanvas _canvas;
     private PondManager _manager;
     
-    const int GridSize = 2;
-    const int PondWidth = 200;
-    const int PondHeight = 200;
+    const int GridSize = 1;
+    const int PondWidth = 400;
+    const int PondHeight = 400;
     
     private bool IsCompiled => _compiler?.HasAssembly ?? false;
     
@@ -88,29 +122,62 @@
 
     private async Task CreateEditor()
     {
-        _source = await Http.GetStringAsync("user-scripts/sample.txt");
         await JSRuntime.InvokeVoidAsync("createEditor", "code-editor", "codeEditor");
-        await JSRuntime.InvokeVoidAsync("codeEditor.setCode", _source);
+        await ReadSources();
+        await SelectSource(_sources.First().Key);
     }
 
-    private void CreateEntity()
+    private async Task SaveSource()
     {
-        for (var i = 0; i < 50; i++) 
-            RealCreateEntity();
+        _sources[_selectedSource] = await JSRuntime.InvokeAsync<string>("codeEditor.getCode");
+        await WriteAllSources();
+    }
+
+    private ValueTask WriteAllSources() => LocalStorage.SetItemAsync("savedScripts", _sources);
+
+    private async Task FetchExampleSources()
+    {
+        var sourceFiles = new []
+        {
+            "BaseEntity.cs",
+            "Simple.cs",
+            "Complex.cs"
+        };
+        _sources.Clear();
+        foreach (var sourceFile in sourceFiles)
+        {
+            var code = await Http.GetStringAsync($"user-scripts/{sourceFile}.txt");
+            _sources.Add(sourceFile, code);
+        }
+    }
+
+    private async Task ReadSources()
+    {
+        var hasLocalScripts = await LocalStorage.ContainKeyAsync("savedScripts");
+        if (!hasLocalScripts)
+        {
+            await FetchExampleSources();
+            return;
+        }
+        _sources = await LocalStorage.GetItemAsync<Dictionary<string, string>>("savedScripts");
+    } 
+    
+    private async Task SelectSource(string source)
+    {
+        if (_selectedSource != string.Empty) await SaveSource();
+        _selectedSource = source;
+        await JSRuntime.InvokeVoidAsync("codeEditor.setCode", _sources[source]);
+    }
+
+    private void CreateEntity(string fullName)
+    {
+        for (var i = 0; i < _countToCreate[fullName]; i++) 
+            RealCreateEntity(fullName);
     }
     
-    private void RealCreateEntity()
+    private void RealCreateEntity(string fullName)
     {
-        int ColorRnd(int min) => _random.Next(min) + (0xFF - min);
-        var instance = _compiler.New<AbstractEntity>("PondSharp.Examples.ExampleEntity");
-        instance.Initialize(
-            Guid.NewGuid().ToString(),
-            _engine, 
-            _random.Next(-PondWidth/2, PondWidth/2-1), 
-            _random.Next(-PondHeight/2, PondHeight/2-1),
-            Color.FromArgb(ColorRnd(0x66), ColorRnd(0x66), ColorRnd(0x66)).ToArgb(),
-            20);
-        _engine.InsertEntity(instance);
+        _manager.InitializeAndCreateEntity(_compiler.New<AbstractEntity>(fullName));
     }
 
     private async Task CompileSource()
@@ -119,12 +186,17 @@
         
         try
         {
+            await SaveSource();
             _output = "Compiling";
             StateHasChanged();
             await Task.Delay(TimeSpan.FromMilliseconds(100));
-            
-            _source = await JSRuntime.InvokeAsync<string>("codeEditor.getCode");
-            _compiler.Compile(_source);
+            _compiler.Compile(_sources.Values);
+            _availableEntityTypes = _compiler
+                .AvailableInstances(typeof(AbstractEntity))
+                .Select(t => (t, t.Split('.').Last()))
+                .ToArray();
+            if (_availableEntityTypes.Length == 0) throw new Exception("No found classes which extend AbstractEntity");
+            _countToCreate = _availableEntityTypes.Select(t => (t.Item1, 10)).ToDictionary(t => t.Item1, t => t.Item2);
             _output = "Ready";
             
             StateHasChanged();

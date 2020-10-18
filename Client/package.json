@@ -4,8 +4,8 @@
   "description": "PondSharp Client",
   "main": "index.js",
   "scripts": {
-    "dev": "webpack --watch",
-    "build:release": "webpack"
+    "build:dev": "webpack",
+    "build:release": "webpack -c ./webpack-release.config.js"
   },
   "author": "Kevin Gravier <kevin@mrkmg.com>",
   "license": "ISC",
@@ -19,7 +19,7 @@
     "style-loader": "^2.0.0",
     "ts-loader": "^8.0.5",
     "typescript": "^4.0.3",
-    "webpack": "^5.1.2",
+    "webpack": "^5.1.3",
     "webpack-cli": "^4.0.0"
   }
 }

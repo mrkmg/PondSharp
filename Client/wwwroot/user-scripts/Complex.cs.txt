@@ -1,23 +1,17 @@
-using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
-using PondSharp.UserScripts;
 
 namespace PondSharp.Examples
 {
-    public class ExampleEntity : AbstractEntity
+    public class Complex : BaseEntity
     {
-        private readonly Random _random = new Random();
-
-        private int _forceX = 0;
-        private int _forceY = 0;
         private int _thinkCooldown = 0;
-
+        
         public override void OnCreated()
         {
             ChooseRandomDirection();
         }
-
+        
         public override void Tick()
         {
             if (_thinkCooldown <= 0)
@@ -30,7 +24,13 @@ namespace PondSharp.Examples
                 ChooseRandomDirection();
                 _thinkCooldown = _random.Next(20);
             }
-            MoveTo(X + _forceX, Y + _forceY);
+
+            if (MoveTo(X + _forceX, Y + _forceY)) return;
+            
+            // reverse if stuck
+            _forceX = -_forceX;
+            _forceY = -_forceY;
+            _thinkCooldown = 50;
         }
 
         private void ChooseForceDirections()
@@ -70,24 +70,6 @@ namespace PondSharp.Examples
             }
 
         }
-
-        private void ChooseRandomDirection()
-        {
-            _forceX = _random.Next(-1, 2);
-            _forceY = _random.Next(-1, 2);
-        }
-
-        private static (int, int) GetForceDirection(int x, int y)
-        {
-            var dM = Math.Max(Math.Abs(x), Math.Abs(y));
-            return dM == 0 ? (0, 0) : ((int)Math.Round((double)x / dM), (int)Math.Round((double)y / dM));
-        }
-        
-        private static int EntityDist(AbstractEntity e1, AbstractEntity e2) => 
-            Dist(e1.X, e1.Y, e2.X, e2.Y);
-        
-        private static int Dist(int x1, int y1, int x2, int y2) =>
-            (int) Math.Sqrt(Math.Pow(x1 - x2, 2) + Math.Pow(y1 - y2, 2));
 
 
     }

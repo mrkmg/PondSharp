@@ -1,6 +1,9 @@
 const path = require('path');
 module.exports = {
-    devtool: 'inline-source-map',
+    devtool: 'cheap-source-map',
+    watchOptions: {
+        ignored: ["node_modules/**"]
+    },
     module: {
         rules: [{
             test: /\.tsx?$/,
@@ -25,11 +28,21 @@ module.exports = {
     },
     optimization: {
         minimize: false,
+        splitChunks: {
+            chunks: "all",
+            cacheGroups: {
+                vendors: {
+                    test: /[\\/]node_modules[\\/]/,
+                    name: "vendors"
+                }
+            }
+        }
     },
-    entry: './ts/main.ts',
+    entry: {
+        main: {import: './ts/main.ts'},
+    },
     output: {
-        filename: 'main.js',
         path: path.resolve(__dirname, 'wwwroot/js'),
-        publicPath: "/js/"
+        publicPath: "js/"
     }
 };

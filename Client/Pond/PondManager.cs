@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Drawing;
 using System.Threading.Tasks;
 using System.Timers;
 using PondSharp.UserScripts;
@@ -13,6 +14,7 @@ namespace PondSharp.Client.Pond
         
         private readonly Timer _tickTimer;
         private DateTime _lastTime = DateTime.Now;
+        private Random _random = new Random();
         public double CurrentTickTime = 50;
 
         public PondManager([NotNull] PondEngine engine, [NotNull] PondCanvas canvas)
@@ -74,6 +76,19 @@ namespace PondSharp.Client.Pond
         {
             _tickTimer.Enabled = false;
             await PondCanvas.Stop();
+        }
+
+        public void InitializeAndCreateEntity(AbstractEntity entity)
+        {
+            int ColorRnd(int min) => _random.Next(min) + (0xFF - min);
+            entity.Initialize(
+                Guid.NewGuid().ToString(),
+                PondEngine,
+                _random.Next(-PondCanvas.Width/2, PondCanvas.Width/2-1), 
+                _random.Next(-PondCanvas.Height/2, PondCanvas.Height/2-1),
+                Color.FromArgb(ColorRnd(0x66), ColorRnd(0x66), ColorRnd(0x66)).ToArgb(),
+                30);
+            PondEngine.InsertEntity(entity);
         }
 
         public void Reset()

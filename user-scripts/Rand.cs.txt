@@ -1,6 +1,6 @@
 namespace PondSharp.Examples
 {
-    public class Simple : BaseEntity
+    public class Rand : BaseEntity
     {
         public override void OnCreated()
         {

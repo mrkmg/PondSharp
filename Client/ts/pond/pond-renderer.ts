@@ -62,11 +62,11 @@ export class PondRenderer {
     
     public processEntityChangeRequests(requests: EntityChangeRequest[]) {
         for (const request of requests) {
-            if (request.x !== null && request.y !== null) {
-                this.moveEntity(request.entityId, request.x, request.y);
+            if (request.X !== null && request.Y !== null) {
+                this.moveEntity(request.EntityId, request.X, request.Y);
             }
-            if (request.color != null) {
-                this.changeEntityColor(request.entityId, request.color);
+            if (request.Color != null) {
+                this.changeEntityColor(request.EntityId, request.Color);
             }
         }
     }
@@ -77,9 +77,9 @@ export class PondRenderer {
 }
 
 interface EntityChangeRequest {
-    entityId: string;
-    x?: number;
-    y?: number;
-    color?: number;
+    EntityId: string;
+    X?: number;
+    Y?: number;
+    Color?: number;
 }
 

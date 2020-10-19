@@ -33,13 +33,13 @@ namespace PondSharp.Client
             _baseUri = baseUri;
         }
 
-        public void Compile(IEnumerable<string> sourceTexts)
+        public void Compile(IEnumerable<(string, string)> sourceTexts)
         {
             var assemblyName = Path.GetRandomFileName();
             var options = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp8);
             
-            var trees = sourceTexts.Select(sourceText => 
-                CSharpSyntaxTree.ParseText(sourceText, options));
+            var trees = sourceTexts.Select(st =>
+                CSharpSyntaxTree.ParseText(st.Item2, options, st.Item1));
             var compilation = CSharpCompilation.Create(
                 assemblyName,
                 trees,
@@ -50,13 +50,25 @@ namespace PondSharp.Client
             var result = compilation.Emit(ms);
             var errors = result.Diagnostics
                 .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
-                .Select(diagnostic => diagnostic.GetMessage())
+                .Select(GetDiagnosticError)
                 .ToArray();
             if (errors.Length > 0)
-                throw new Exception($"Failed to compile\n: {string.Join(',', errors)}");
+                throw new CompileException(errors);
 
             ms.Seek(0, SeekOrigin.Begin);
             _assembly = Assembly.Load(ms.ToArray());
+        }
+
+        private string GetDiagnosticError(Diagnostic diagnostic)
+        {
+            var lineSpan = diagnostic.Location.GetMappedLineSpan();
+            return
+                lineSpan.Path + "[Line " +
+                (lineSpan.StartLinePosition.Line + 1) + " Pos " +
+                (lineSpan.StartLinePosition.Character + 1) + "]: " +
+                diagnostic.GetMessage();
+            
+            return $"{diagnostic.Location.GetMappedLineSpan().Path}: {diagnostic.GetMessage()}";
         }
 
         public IEnumerable<string> AvailableInstances(Type targetType)
@@ -75,11 +87,9 @@ namespace PondSharp.Client
         {
             if (_assembly is null) 
                 throw new InvalidOperationException("No compiled assembly present");
-            var instance = _assembly.CreateInstance(instanceName, false, BindingFlags.Default, null, args, null, null) as T;
-            if (instance is null)
+            if (!(_assembly.CreateInstance(instanceName, false, BindingFlags.Default, null, args, null, null) is T instance))
                 throw new ApplicationException($"{instanceName} failed to initialize");
             return instance;
-
         }
 
         private async Task SetReferences(IEnumerable<Type> referenceTypes)
@@ -107,6 +117,16 @@ namespace PondSharp.Client
             }
 
             _references = neededAssemblyLocations.Select(l => CachedReferences[l]).ToList();
+        }
+    }
+
+    public class CompileException : Exception
+    {
+        public IList<string> Errors { get; private set; }
+
+        public CompileException(IList<string> errors) : base("Compilation Exception")
+        {
+            Errors = errors;
         }
     }
 }

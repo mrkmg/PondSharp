@@ -1,12 +1,9 @@
 ﻿@page "/"
 @using PondSharp.UserScripts
 @using PondSharp.Client.Pond
+@using PondSharp.Client.IDE
 @using System.Timers
-@using System.Drawing
 @inject HttpClient Http
-<!-- ReSharper disable once InconsistentNaming -->
-@inject IJSRuntime JSRuntime
-@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
 
 
 <div class="container-fluid">
@@ -23,42 +20,84 @@
             <PondCanvas @ref="_canvas" Width="@PondWidth" Height="@PondHeight" GridSize="@GridSize"></PondCanvas>
             <div class="btn-group">
                 <button class="btn btn-primary" @onclick="CompileSource" disabled="@(!_compilerReady)">Compile</button>
-                <button class="btn btn-success" @onclick="StartPond" disabled="@(!IsCompiled)">Start</button>
-                <button class="btn btn-warning" @onclick="StopPond" disabled="@(!IsCompiled)">Stop</button>
-                <button class="btn btn-danger" @onclick="Reset" disabled="@(!IsCompiled)">Reset</button>
+                <button class="btn btn-success" @onclick="StartPond" disabled="@(!IsCompiled || IsRunning)">Start</button>
+                <button class="btn btn-warning" @onclick="StopPond" disabled="@(!IsRunning)">Stop</button>
+                <button class="btn btn-danger" @onclick="Reset" disabled="@(!IsRunning)">Reset</button>
             </div>
-            @if (IsCompiled)
-            {
-                <h3>Create Entities:</h3>
-                @foreach (var (type, name) in _availableEntityTypes)
-                {
-                    
-                    <div class="input-group">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text">@name</span>
-                        </div>
-                        <input class="form-control" type="number" @bind="_countToCreate[type]" min="1" />
-                        <div class="input-group-append">
-                            <button class="btn btn-info" @onclick="@(e => CreateEntity(type))">Create</button>
-                        </div>
+            <div class="row">
+                <div class="col">
+                    <h3>Create Entities:</h3>
+                    @if (IsCompiled)
+                    {
+                        @foreach (var (type, name) in _availableEntityTypes)
+                        {
+                            
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">@name</span>
+                                </div>
+                                <input class="form-control" type="number" @bind="_countToCreate[type]" min="1" />
+                                <div class="input-group-append">
+                                    <button class="btn btn-info" @onclick="@(e => CreateEntity(type))">Create</button>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+                <div class="col w-25">
+                    <div>
+                        <h3>Stats:</h3>
+                        <div style="font-family: monospace">TPS: <span>@(Math.Ceiling(1000 / (_manager?.CurrentTickTime ?? 1)))</span></div>
+                        <div style="font-family: monospace">Entities: <span>@(_engine?.Entities.Count() ?? 0)</span></div>
+                        <div style="font-family: monospace">@_output</div>
                     </div>
-                }
-            }
-            <div>
-                <h3>Stats:</h3>
-                <div style="font-family: monospace">TPS: <span>@(Math.Ceiling(1000 / (_manager?.CurrentTickTime ?? 1)))</span></div>
-                <div style="font-family: monospace">Entities: <span>@(_engine?.Entities.Count() ?? 0)</span></div>
-                <div style="font-family: monospace">@_output</div>
+                </div>
             </div>
         </div>
         <div class="col overflow-hidden">
-            <div class="btn-group btn-group-sm">
-                @foreach (var name in _sources.Keys)
-                {
-                    <button class="nav-item btn @(_selectedSource == name ? "btn-primary" : "btn-secondary")" @onclick="@(e => SelectSource(name))">@name</button>
-                }
-            </div>
-            <div id="code-editor" class="w-auto" style="min-height: 500px; height: calc(100vh - 200px)"></div>
+            <IdeElement @ref="_ideElement"></IdeElement>
+            @if (_errors.Count > 0)
+            {
+                <div class="pre-scrollable bg-warning">
+                    @foreach (var error in _errors)
+                    {
+                        <div class="border-bottom">@error</div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+    <hr />
+    <div class="row">
+        <div class="col">
+            <p>
+                <strong>How:</strong> Edit code with the editor on the right. Any changes you make are
+                automatically save to localStorage. Once ready, click "Compile" to compile and load
+                the generated assembly into the simulation. You can then create instances of each found entity which
+                extends AbstractEntity and load them into the world. Once ready, click "Start"!
+            </p>
+            <p>
+                Under the create entities, you can choose how many you want to create. To clear out all the entities,
+                click "Reset". Recompiling will also clear out all existing entities.
+            </p>
+            <p>
+                <strong>Who:</strong> This project was made by
+                <a href="https://github.com/mrkmg">Kevin Gravier</a> and will eventually become open-sourced.
+            </p>
+            <p>
+                <strong>What:</strong> A simulation to tech demo in browser c# .Net Standard compilation and execution.
+            </p>
+            <p>
+                <strong>Where:</strong>
+                <a href="https://mrkmg.github.io/PondSharp/">https://mrkmg.github.io/PondSharp/</a>
+            </p>
+            <p>
+                <strong>When:</strong> © 2020 Kevin Gravier - all rights reserved.
+            </p>
+            <p>
+                <strong>Why:</strong> This was made mostly out of curiosity of the ability to compile and run c# in the
+                browser with Blazor. This may or may not turn into something more.
+            </p>
         </div>
     </div>
 </div>
@@ -66,8 +105,7 @@
 @code
 {
     private string _output = "No Instance Loaded";
-    private Dictionary<string, string> _sources = new Dictionary<string, string>();
-    private string _selectedSource = string.Empty;
+    private IList<string> _errors = new List<string>();
     private CSharpClassCompiler _compiler;
     private bool _compilerReady;
     
@@ -77,14 +115,15 @@
     private PondEngine _engine;
     private PondCanvas _canvas;
     private PondManager _manager;
+    private IdeElement _ideElement;
     
-    const int GridSize = 1;
-    const int PondWidth = 400;
-    const int PondHeight = 400;
-    
+    const int GridSize = 2;
+    const int PondWidth = 300;
+    const int PondHeight = 300;
+
+
     private bool IsCompiled => _compiler?.HasAssembly ?? false;
-    
-    private readonly Random _random = new Random();
+    private bool IsRunning => _manager?.IsRunning ?? false;
     
     private Timer _debugUpdateTimer = new Timer();
 
@@ -104,11 +143,10 @@
         TryCreatePondManager();
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override void OnAfterRender(bool firstRender)
     {
         if (!firstRender) return;
         
-        await CreateEditor();
         TryCreatePondManager();
     }
 
@@ -118,55 +156,6 @@
         {
             _manager = new PondManager(_engine, _canvas);
         }
-    }
-
-    private async Task CreateEditor()
-    {
-        await JSRuntime.InvokeVoidAsync("createEditor", "code-editor", "codeEditor");
-        await ReadSources();
-        await SelectSource(_sources.First().Key);
-    }
-
-    private async Task SaveSource()
-    {
-        _sources[_selectedSource] = await JSRuntime.InvokeAsync<string>("codeEditor.getCode");
-        await WriteAllSources();
-    }
-
-    private ValueTask WriteAllSources() => LocalStorage.SetItemAsync("savedScripts", _sources);
-
-    private async Task FetchExampleSources()
-    {
-        var sourceFiles = new []
-        {
-            "BaseEntity.cs",
-            "Simple.cs",
-            "Complex.cs"
-        };
-        _sources.Clear();
-        foreach (var sourceFile in sourceFiles)
-        {
-            var code = await Http.GetStringAsync($"user-scripts/{sourceFile}.txt");
-            _sources.Add(sourceFile, code);
-        }
-    }
-
-    private async Task ReadSources()
-    {
-        var hasLocalScripts = await LocalStorage.ContainKeyAsync("savedScripts");
-        if (!hasLocalScripts)
-        {
-            await FetchExampleSources();
-            return;
-        }
-        _sources = await LocalStorage.GetItemAsync<Dictionary<string, string>>("savedScripts");
-    } 
-    
-    private async Task SelectSource(string source)
-    {
-        if (_selectedSource != string.Empty) await SaveSource();
-        _selectedSource = source;
-        await JSRuntime.InvokeVoidAsync("codeEditor.setCode", _sources[source]);
     }
 
     private void CreateEntity(string fullName)
@@ -183,14 +172,15 @@
     private async Task CompileSource()
     {
         await Reset();
-        
+
         try
         {
-            await SaveSource();
+            await _ideElement.TriggerSave();
             _output = "Compiling";
+            _errors.Clear();
             StateHasChanged();
             await Task.Delay(TimeSpan.FromMilliseconds(100));
-            _compiler.Compile(_sources.Values);
+            _compiler.Compile(_ideElement.Sources);
             _availableEntityTypes = _compiler
                 .AvailableInstances(typeof(AbstractEntity))
                 .Select(t => (t, t.Split('.').Last()))
@@ -198,12 +188,19 @@
             if (_availableEntityTypes.Length == 0) throw new Exception("No found classes which extend AbstractEntity");
             _countToCreate = _availableEntityTypes.Select(t => (t.Item1, 10)).ToDictionary(t => t.Item1, t => t.Item2);
             _output = "Ready";
-            
+
+            StateHasChanged();
+        }
+        catch (CompileException e)
+        {
+            _errors = e.Errors.ToList();
+            _output = "Compilation Failure";
             StateHasChanged();
         }
         catch (Exception e)
         {
-            _output = e.Message;
+            _errors = new List<string>(new[] {e.Message});
+            _output = "Unknown Failure";
             StateHasChanged();
         }
     }
@@ -231,6 +228,5 @@
         _engine.ClearAllEntities();
         await StopPond();
     }
-
 
 }

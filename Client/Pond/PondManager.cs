@@ -16,6 +16,7 @@ namespace PondSharp.Client.Pond
         private DateTime _lastTime = DateTime.Now;
         private Random _random = new Random();
         public double CurrentTickTime = 50;
+        public bool IsRunning => _tickTimer.Enabled;
 
         public PondManager([NotNull] PondEngine engine, [NotNull] PondCanvas canvas)
         {

@@ -67,8 +67,6 @@ namespace PondSharp.Client
                 (lineSpan.StartLinePosition.Line + 1) + " Pos " +
                 (lineSpan.StartLinePosition.Character + 1) + "]: " +
                 diagnostic.GetMessage();
-            
-            return $"{diagnostic.Location.GetMappedLineSpan().Path}: {diagnostic.GetMessage()}";
         }
 
         public IEnumerable<string> AvailableInstances(Type targetType)

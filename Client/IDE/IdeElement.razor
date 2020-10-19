@@ -75,21 +75,21 @@
         }
     }
 
-    public IEnumerable<(string, string)> Sources => _sources.Select(s => (s.Key, s.Value));
+    public IEnumerable<(string path, string source)> Sources => _sources.Select(s => (s.Key, s.Value));
     public Task TriggerSave() => SaveSource();
 
     public async Task GetExampleScripts()
     {
         _sources.Clear();
-        await LocalStorage.ClearAsync();
-        await ReadSources();
+        await LocalStorage.ClearAsync().ConfigureAwait(false);
+        await ReadSources().ConfigureAwait(false);
     }
     
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
         
-        await CreateEditor();
+        await CreateEditor().ConfigureAwait(false);
     }
     
     private void NewSource()
@@ -127,8 +127,8 @@
             case EditorPromptType.Delete:
                 _sources.Remove(_fullEditorPromptName);
                 if (_selectedSource == _fullEditorPromptName && _sources.Count > 0) 
-                    await SelectSource(_sourceNames.First(), _selectedSource != _fullEditorPromptName);
-                await WriteAllSources();
+                    await SelectSource(_sourceNames.First(), _selectedSource != _fullEditorPromptName).ConfigureAwait(false);
+                await WriteAllSources().ConfigureAwait(false);
                 _editorPromptType = EditorPromptType.None;
                 StateHasChanged();
                 break;
@@ -143,8 +143,8 @@
                     _editorPromptError = $"{_fullEditorPromptName} already exists";
                 }
                 _sources.Add(_fullEditorPromptName, "using PondSharp.UserScripts;\n\n\nnamespace PondSharp.Examples {\n\n\n}");
-                await SelectSource(_fullEditorPromptName);
-                await WriteAllSources();
+                await SelectSource(_fullEditorPromptName).ConfigureAwait(false);
+                await WriteAllSources().ConfigureAwait(false);
                 CancelEditorPrompt();
                 StateHasChanged();
                 break;
@@ -160,12 +160,12 @@
                     break;
                 }
                 if (_selectedSource == _renameScriptOriginalName)
-                    await SaveSource();
+                    await SaveSource().ConfigureAwait(false);
                 _sources.Add(_fullEditorPromptName, _sources[_renameScriptOriginalName]);
                 _sources.Remove(_renameScriptOriginalName);
                 if (_selectedSource == _renameScriptOriginalName)
-                    await SelectSource(_fullEditorPromptName, false);
-                await WriteAllSources();
+                    await SelectSource(_fullEditorPromptName, false).ConfigureAwait(false);
+                await WriteAllSources().ConfigureAwait(false);
                 CancelEditorPrompt();
                 StateHasChanged();
                 break;
@@ -176,16 +176,16 @@
     
     private async Task CreateEditor()
     {
-        await JSRuntime.InvokeVoidAsync("createEditor", "code-editor", "codeEditor");
-        await ReadSources();
-        await SelectSource(_sources.First().Key);
+        await JSRuntime.InvokeVoidAsync("createEditor", "code-editor", "codeEditor").ConfigureAwait(false);
+        await ReadSources().ConfigureAwait(false);
+        await SelectSource(_sources.First().Key).ConfigureAwait(false);
         StateHasChanged();
     }
 
     private async Task SaveSource()
     {
-        _sources[_selectedSource] = await JSRuntime.InvokeAsync<string>("codeEditor.getCode");
-        await WriteAllSources();
+        _sources[_selectedSource] = await JSRuntime.InvokeAsync<string>("codeEditor.getCode").ConfigureAwait(false);
+        await WriteAllSources().ConfigureAwait(false);
     }
 
     private ValueTask WriteAllSources() => LocalStorage.SetItemAsync("savedScripts", _sources.Select(s => new SavedSource
@@ -199,28 +199,28 @@
         var sourceFiles = new []
         {
             "BaseEntity.cs",
-            "Simple.cs",
-            "Complex.cs"
+            "Rand.cs",
+            "Clustering.cs"
         };
         _sources.Clear();
         foreach (var sourceFile in sourceFiles)
         {
-            var code = await Http.GetStringAsync($"user-scripts/{sourceFile}.txt");
+            var code = await Http.GetStringAsync($"user-scripts/{sourceFile}.txt").ConfigureAwait(false);
             _sources.Add(sourceFile, code);
         }
     }
 
     private async Task ReadSources()
     {
-        var hasLocalScripts = await LocalStorage.ContainKeyAsync("savedScripts");
+        var hasLocalScripts = await LocalStorage.ContainKeyAsync("savedScripts").ConfigureAwait(false);
         if (hasLocalScripts)
         {
-            var sources = await LocalStorage.GetItemAsync<SavedSource[]>("savedScripts");
+            var sources = await LocalStorage.GetItemAsync<SavedSource[]>("savedScripts").ConfigureAwait(false);
             _sources = sources.ToDictionary(s => s.Name, s => s.Source);
         }
         if (_sources.Count == 0)
         {
-            await FetchExampleSources();
+            await FetchExampleSources().ConfigureAwait(false);
         }
         StateHasChanged();
     } 
@@ -229,7 +229,7 @@
     {
         if (_selectedSource != string.Empty && save) await SaveSource();
         _selectedSource = source;
-        await JSRuntime.InvokeVoidAsync("codeEditor.setCode", _sources[source]);
+        await JSRuntime.InvokeVoidAsync("codeEditor.setCode", _sources[source]).ConfigureAwait(false);
     }
     
     private struct SavedSource

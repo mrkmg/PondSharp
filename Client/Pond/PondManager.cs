@@ -7,7 +7,7 @@ using PondSharp.UserScripts;
 
 namespace PondSharp.Client.Pond
 {
-    public class PondManager
+    public sealed class PondManager
     {
         public readonly PondCanvas PondCanvas;
         public readonly PondEngine PondEngine;
@@ -48,21 +48,21 @@ namespace PondSharp.Client.Pond
             PondCanvas.FlushChangeQueue();
         }
         
-        private void EngineOnEntityAdded(object sender, AbstractEntity e)
+        private void EngineOnEntityAdded(object sender, IAbstractEntity e)
         {
             PondCanvas.CreateEntity(e.Id, e.X, e.Y, e.Color);
         }
 
         private void EngineOnEntityMoved(object sender, (int, int) position)
         {
-            if (!(sender is AbstractEntity entity)) return;
+            if (!(sender is IAbstractEntity entity)) return;
             var (x, y) = position;
             PondCanvas.QueueMoveEntity(entity.Id, x, y);
         }
 
         private void EngineOnEntityColorChanged(object sender, int color)
         {
-            if (!(sender is AbstractEntity entity)) return;
+            if (!(sender is IAbstractEntity entity)) return;
             PondCanvas.QueueChangeEntityColor(entity.Id, color);
         }
 
@@ -70,16 +70,16 @@ namespace PondSharp.Client.Pond
         {
             _lastTime = DateTime.Now;
             _tickTimer.Enabled = true;
-            await PondCanvas.Start();
+            await PondCanvas.Start().ConfigureAwait(false);
         }
 
         public async Task Stop()
         {
             _tickTimer.Enabled = false;
-            await PondCanvas.Stop();
+            await PondCanvas.Stop().ConfigureAwait(false);
         }
 
-        public void InitializeAndCreateEntity(AbstractEntity entity)
+        public void InitializeAndCreateEntity(IAbstractEntity entity)
         {
             int ColorRnd(int min) => _random.Next(min) + (0xFF - min);
             entity.Initialize(

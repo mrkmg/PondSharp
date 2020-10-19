@@ -1,0 +1,42 @@
+<p>
+    <strong>How:</strong> Click "Compile", then add some entities.
+    
+    To change the entity behaviour, modify the code via the in-browser editor then re-compile.
+    Any changes you make are periodically save to localStorage
+    (<a href="javascript:void(0)" @onclick="DoReset">reset to examples</a>).
+</p>
+<p>
+    Under the create entities, you can choose how many you want to create. To clear out all the entities,
+    click "Reset". Recompiling will also clear out all existing entities. The counts to create are also
+    saved to localStorage.
+</p>
+<p>
+    <strong>Who:</strong> This project was made by
+    <a href="https://github.com/mrkmg">Kevin Gravier</a> and open sourced under the MIT License.
+</p>
+<p>
+    <strong>What:</strong> A simulation to tech demo in browser C# .Net Standard compilation and execution
+    using 
+    <a href="https://dotnet.microsoft.com/apps/aspnet/web-apps/blazor">Blazor</a>, 
+    <a href="https://getbootstrap.com/">Bootstrap</a>,
+    <a href="https://www.pixijs.com/">PixiJS</a>, and
+    <a href="https://microsoft.github.io/monaco-editor/">Monaco Editor</a>.
+</p>
+<p>
+    <strong>Where:</strong>
+    <a href="https://github.com/mrkmg/PondSharp">https://github.com/mrkmg/PondSharp</a>
+</p>
+<p>
+    <strong>When:</strong> © 2020 Kevin Gravier (MIT License).
+</p>
+<p>
+    <strong>Why:</strong> This was made mostly out of curiosity of the ability to compile and run c# in the
+    browser with Blazor. This may or may not turn into something more.
+</p>
+
+@code {
+    [Parameter]
+    public EventCallback OnDoReset { get; set; }
+
+    private void DoReset() => OnDoReset.InvokeAsync(this);
+}

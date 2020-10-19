@@ -5,7 +5,7 @@ using PondSharp.UserScripts;
 
 namespace PondSharp.Client.Pond
 {
-    public class PondEngine : AbstractEngine
+    public sealed class PondEngine : AbstractEngine
     {
         private int _minX;
         private int _maxX;
@@ -20,25 +20,25 @@ namespace PondSharp.Client.Pond
             _maxY = maxY;
         }
 
-        private Dictionary<string, AbstractEntity> _entities = new Dictionary<string, AbstractEntity>();
-        public override IEnumerable<AbstractEntity> Entities { get => _entities.Values; }
+        private Dictionary<string, IAbstractEntity> _entities = new Dictionary<string, IAbstractEntity>();
+        public override IEnumerable<IAbstractEntity> Entities { get => _entities.Values; }
 
-        public override AbstractEntity GetEntity(string entityId) => _entities[entityId];
+        public override IAbstractEntity GetEntity(string entityId) => _entities[entityId];
 
-        protected bool CanMoveTo(AbstractEntity entity, int x, int y)
+        public override bool CanMoveTo(IAbstractEntity entity, int x, int y)
         {
             return Math.Abs(entity.X - x + entity.Y - y) <= 2 &&
                    x >= _minX && x <= _maxX &&
                    y >= _minY && y <= _maxY;
         }
 
-        public void InsertEntity(AbstractEntity entity)
+        public void InsertEntity(IAbstractEntity entity)
         {
             _entities.Add(entity.Id, entity);
             OnEntityAdded(entity);
         }
         
-        public override bool MoveTo(AbstractEntity entity, int x, int y)
+        public override bool MoveTo(IAbstractEntity entity, int x, int y)
         {
             if (!CanMoveTo(entity, x, y)) return false;
             if (entity.X != x || entity.Y != y)
@@ -49,19 +49,19 @@ namespace PondSharp.Client.Pond
             return true;
         }
 
-        public override bool SetColorTo(AbstractEntity entity, int color)
+        public override bool ChangeColorTo(IAbstractEntity entity, int color)
         {
             WriteEntityColor(entity, color);
             OnEntityColorChanged(entity);
             return true;
         }
 
-        public override IEnumerable<AbstractEntity> GetVisibleEntities(AbstractEntity entity) => 
+        public override IEnumerable<IAbstractEntity> GetVisibleEntities(IAbstractEntity entity) => 
             _entities.Values
                 .Where(e => EntityDist(entity, e) < entity.ViewDistance)
                 .Where(e => e.Id != entity.Id);
 
-        private static int EntityDist(AbstractEntity e1, AbstractEntity e2) => 
+        private static int EntityDist(IAbstractEntity e1, IAbstractEntity e2) => 
             (int) Math.Sqrt(Math.Pow(e1.X - e2.X, 2) + Math.Pow(e1.Y - e2.Y, 2));
 
         public bool RemoveEntity(string entityId) => _entities.Remove(entityId);

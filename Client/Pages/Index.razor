@@ -8,9 +8,7 @@
 
 <div class="container-fluid">
     <div class="row">
-        <div class="col">
-            <h1>PondSharp <span class="main-subheading">An alpha tech demo of in-browser C# (.NET Standard) compiliation.</span></h1>
-        </div>
+        <Header></Header>
     </div>
     <div class="row">
         <div class="col-auto" style="width: @(PondWidth * GridSize + 10)px">
@@ -30,7 +28,7 @@
                         {
                             
                             <div class="input-group">
-                                <div class="input-group-prepend">
+                                <div class="input-group-prepend" title="@type">
                                     <span class="input-group-text">@name</span>
                                 </div>
                                 <input class="form-control" type="number" @bind="_countToCreate[type]" min="1" />
@@ -67,41 +65,7 @@
     <hr />
     <div class="row">
         <div class="col">
-            <p>
-                <strong>How:</strong> Edit code with the editor on the right. Any changes you make are
-                automatically save to localStorage 
-                (<a href="javascript:void(0)" @onclick="GetExampleScripts">reset to examples</a>). Once ready, click 
-                "Compile" to compile and load the generated assembly into the simulation. You can then create instances
-                of each found entity which extends AbstractEntity and load them into the world. Once ready, click 
-                "Start"!
-            </p>
-            <p>
-                Under the create entities, you can choose how many you want to create. To clear out all the entities,
-                click "Reset". Recompiling will also clear out all existing entities.
-            </p>
-            <p>
-                <strong>Who:</strong> This project was made by
-                <a href="https://github.com/mrkmg">Kevin Gravier</a> and will eventually become open-sourced.
-            </p>
-            <p>
-                <strong>What:</strong> A simulation to tech demo in browser c# .Net Standard compilation and execution
-                using 
-                <a href="https://dotnet.microsoft.com/apps/aspnet/web-apps/blazor">Blazor</a>, 
-                <a href="https://getbootstrap.com/">Bootstrap</a>,
-                <a href="https://www.pixijs.com/">PixiJS</a>, and
-                <a href="https://microsoft.github.io/monaco-editor/">Monaco Editor</a>.
-            </p>
-            <p>
-                <strong>Where:</strong>
-                <a href="https://mrkmg.github.io/PondSharp/">https://mrkmg.github.io/PondSharp/</a>
-            </p>
-            <p>
-                <strong>When:</strong> © 2020 Kevin Gravier - all rights reserved.
-            </p>
-            <p>
-                <strong>Why:</strong> This was made mostly out of curiosity of the ability to compile and run c# in the
-                browser with Blazor. This may or may not turn into something more.
-            </p>
+            <Information OnDoReset="@GetExampleScripts"></Information>
         </div>
     </div>
 </div>
@@ -113,14 +77,14 @@
     private CSharpClassCompiler _compiler;
     private bool _compilerReady;
 
-    private (string, string)[] _availableEntityTypes = new (string, string)[0];
+    private (string fullName, string name)[] _availableEntityTypes = new (string, string)[0];
 
     private string _entityCountsByType
     {
         get
         {
             if (_engine == null) return "";
-            var typeCounts = _availableEntityTypes.ToDictionary(a => a.Item1, a => 0);
+            var typeCounts = _availableEntityTypes.ToDictionary(a => a.fullName, a => 0);
             typeCounts.Add("*Other", 0);
             foreach (var entity in _engine.Entities)
                 typeCounts[entity.GetType().FullName ?? "*Other"]++;
@@ -159,7 +123,7 @@
             typeof(System.Drawing.Color),
             typeof(Enumerable)
         };
-        _compiler = await CSharpClassCompiler.Make(types, Http.BaseAddress);
+        _compiler = await CSharpClassCompiler.Make(types, Http.BaseAddress).ConfigureAwait(false);
         _compilerReady = true;
         _engine = new PondEngine(-PondWidth/2, PondWidth/2-1, -PondHeight/2, PondHeight/2-1);
         TryCreatePondManager();
@@ -185,7 +149,7 @@
         for (var i = 0; i < _countToCreate[fullName]; i++) 
             RealCreateEntity(fullName);
         
-        await LocalStorage.SetItemAsync($"ec-{fullName}", _countToCreate[fullName]);
+        await LocalStorage.SetItemAsync($"ec-{fullName}", _countToCreate[fullName]).ConfigureAwait(false);
     }
     
     private void RealCreateEntity(string fullName)
@@ -198,34 +162,34 @@
 
     private async Task CompileSource()
     {
-        await Reset();
+        await Reset().ConfigureAwait(false);
 
         try
         {
-            await _ideElement.TriggerSave();
+            await _ideElement.TriggerSave().ConfigureAwait(false);
             _output = "Compiling";
             _errors.Clear();
             StateHasChanged();
-            await Task.Delay(TimeSpan.FromMilliseconds(100));
+            await Task.Delay(TimeSpan.FromMilliseconds(100)).ConfigureAwait(false);
             _compiler.Compile(_ideElement.Sources);
             _availableEntityTypes = _compiler
-                .AvailableInstances(typeof(AbstractEntity))
+                .AvailableInstances(typeof(IAbstractEntity))
                 .Select(t => (t, t.Split('.').Last()))
                 .ToArray();
-            if (_availableEntityTypes.Length == 0) throw new Exception("No found classes which extend AbstractEntity");
+            if (_availableEntityTypes.Length == 0) throw new Exception("No found classes which extend IAbstractEntity");
             _countToCreate.Clear();
             foreach (var (fullName, _) in _availableEntityTypes)
             {
                 Console.WriteLine(fullName);
-                if (await LocalStorage.ContainKeyAsync($"ec-{fullName}"))
-                    _countToCreate.Add(fullName, await LocalStorage.GetItemAsync<int>($"ec-{fullName}"));
-                else if (fullName == "PondSharp.Examples.Complex")
-                    _countToCreate.Add(fullName, 200);
+                if (await LocalStorage.ContainKeyAsync($"ec-{fullName}").ConfigureAwait(false))
+                    _countToCreate.Add(fullName, await LocalStorage.GetItemAsync<int>($"ec-{fullName}").ConfigureAwait(false));
+                else if (fullName == "PondSharp.Examples.Clustering")
+                    _countToCreate.Add(fullName, 50);
                 else
                     _countToCreate.Add(fullName, 10);
 
             }
-            await StartPond();
+            await StartPond().ConfigureAwait(false);
             StateHasChanged();
         }
         catch (CompileException e)
@@ -244,14 +208,14 @@
 
     private async Task StartPond()
     {
-        await _manager.Start();
+        await _manager.Start().ConfigureAwait(false);
         _debugUpdateTimer.Start();
         _output = "Running";
     }
 
     private async Task StopPond()
     {
-        await _manager.Stop();
+        await _manager.Stop().ConfigureAwait(false);
         _debugUpdateTimer.Stop();
         _output = "Running";
     }
@@ -260,10 +224,9 @@
     {
         foreach (var instance in _engine.Entities)
         {
-            await _canvas.DestroyEntity(instance.Id);
+            await _canvas.DestroyEntity(instance.Id).ConfigureAwait(false);
         }
         _engine.ClearAllEntities();
-        await StopPond();
     }
 
 }

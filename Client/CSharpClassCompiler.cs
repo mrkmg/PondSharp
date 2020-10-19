@@ -1,18 +1,16 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
-using System.Reflection.Metadata.Ecma335;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
 namespace PondSharp.Client
 {
-    public class CSharpClassCompiler
+    public sealed class CSharpClassCompiler
     {
         private readonly Uri _baseUri;
         private List<MetadataReference> _references;
@@ -24,7 +22,7 @@ namespace PondSharp.Client
         public static async Task<CSharpClassCompiler> Make(IEnumerable<Type> referenceTypes, Uri baseUri)
         {
             var compiler = new CSharpClassCompiler(baseUri);
-            await compiler.SetReferences(referenceTypes);
+            await compiler.SetReferences(referenceTypes).ConfigureAwait(false);
             return compiler;
         }
 
@@ -33,13 +31,13 @@ namespace PondSharp.Client
             _baseUri = baseUri;
         }
 
-        public void Compile(IEnumerable<(string, string)> sourceTexts)
+        public void Compile(IEnumerable<(string path, string source)> sourceTexts)
         {
             var assemblyName = Path.GetRandomFileName();
             var options = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp8);
             
             var trees = sourceTexts.Select(st =>
-                CSharpSyntaxTree.ParseText(st.Item2, options, st.Item1));
+                CSharpSyntaxTree.ParseText(st.source, options, st.path));
             var compilation = CSharpCompilation.Create(
                 assemblyName,
                 trees,
@@ -76,7 +74,7 @@ namespace PondSharp.Client
 
             return _assembly.GetTypes()
                 .Where(t => t.IsClass)
-                .Where(t => t.IsSubclassOf(targetType))
+                .Where(t => targetType.IsClass && t.IsSubclassOf(targetType) || targetType.IsInterface && t.GetInterfaces().Contains(targetType))
                 .Where(t => !t.IsAbstract && t.IsPublic)
                 .Select(t => t.FullName);
         }
@@ -110,7 +108,7 @@ namespace PondSharp.Client
             
             foreach (var missingAssemblyLocation in missingAssemblies)
             {
-                var stream = await client.GetStreamAsync($"_framework/_bin/{missingAssemblyLocation}");
+                var stream = await client.GetStreamAsync($"_framework/_bin/{missingAssemblyLocation}").ConfigureAwait(false);
                 CachedReferences.Add(missingAssemblyLocation, MetadataReference.CreateFromStream(stream));
             }
 
@@ -118,7 +116,7 @@ namespace PondSharp.Client
         }
     }
 
-    public class CompileException : Exception
+    public sealed class CompileException : Exception
     {
         public IList<string> Errors { get; private set; }
 

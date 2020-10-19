@@ -3,10 +3,10 @@ using System.Collections.Generic;
 
 namespace PondSharp.UserScripts
 {
-    public abstract class AbstractEntity
+    public abstract class AbstractEntity : IAbstractEntity
     {
         public string Id { get; private set; }
-        private AbstractEngine Engine { get; set; }
+        private IEngine Engine { get; set; }
         
         public int X { get; internal set; }
         public int Y { get; internal set; }
@@ -15,7 +15,7 @@ namespace PondSharp.UserScripts
 
         private bool _intialized;
 
-        public virtual void Initialize(string id, AbstractEngine engine, int x = 0, int y = 0, int color = 0xFFFFFF, int viewDistance = 0)
+        public virtual void Initialize(string id, IEngine engine, int x = 0, int y = 0, int color = 0xFFFFFF, int viewDistance = 0)
         {
             if (_intialized) throw new AlreadyInitializedException();
             Id = id;
@@ -28,10 +28,13 @@ namespace PondSharp.UserScripts
             
             OnCreated();
         }
-        
+
+        public bool CanMoveTo(int x, int y) => Engine.CanMoveTo(this, x, y);
         public bool MoveTo(int x, int y) => Engine.MoveTo(this, x, y);
-        public bool SetColor(int color) => Engine.SetColorTo(this, color);
-        public IEnumerable<AbstractEntity> VisibleEntities => Engine.GetVisibleEntities(this);
+
+        public bool CanChangeColorTo(int color) => Engine.CanChangeColorTo(this, color);
+        public bool ChangeColor(int color) => Engine.ChangeColorTo(this, color);
+        public IEnumerable<IAbstractEntity> VisibleEntities => Engine.GetVisibleEntities(this);
 
         public virtual void OnCreated() {}
         public abstract void Tick();

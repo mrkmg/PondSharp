@@ -21,7 +21,7 @@ namespace PondSharp.Examples
             return dM == 0 ? (0, 0) : ((int)Math.Round((double)x / dM), (int)Math.Round((double)y / dM));
         }
         
-        protected static int EntityDist(AbstractEntity e1, AbstractEntity e2) => 
+        protected static int EntityDist(IAbstractEntity e1, IAbstractEntity e2) => 
             Dist(e1.X, e1.Y, e2.X, e2.Y);
         
         protected static int Dist(int x1, int y1, int x2, int y2) =>

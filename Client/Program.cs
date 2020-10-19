@@ -10,8 +10,9 @@ using Microsoft.JSInterop;
 
 namespace PondSharp.Client
 {
-    public class Program
+    public sealed class Program
     {
+        // ReSharper disable once ASYNC0001
         public static async Task Main(string[] args)
         {
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -23,7 +24,7 @@ namespace PondSharp.Client
             });
             var host = builder.Build();
             ConfigureProviders(host.Services);
-            await host.RunAsync();
+            await host.RunAsync().ConfigureAwait(false);
         }
         
         public static void ConfigureProviders(IServiceProvider services)

@@ -8,6 +8,7 @@ export class CodeEditor {
             value: "",
             language: "csharp",
             theme: 'vs-dark',
+            automaticLayout: true
         });
     }
     

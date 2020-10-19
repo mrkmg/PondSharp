@@ -8,9 +8,9 @@
     <div class="btn-group btn-group-sm">
         @foreach (var name in _sourceNames)
         {
-            <div class="btn @(_selectedSource == name ? "btn-primary" : "btn-secondary")" @onclick="e => SelectSource(name)">
+            <button class="btn @(_selectedSource == name ? "btn-primary" : "btn-secondary")" @onclick="e => SelectSource(name)">
                 @name
-            </div>
+            </button>
             
             <div class="btn-group-vertical @(_selectedSource == name ? "bg-primary" : "bg-secondary")">
                 <button class="btn btn-icon @(_selectedSource == name ? "btn-primary" : "btn-secondary")" @onclick="e => RenameScript(name)">
@@ -37,19 +37,23 @@
         @if (_editorPromptType == EditorPromptType.Add || _editorPromptType == EditorPromptType.Rename)
         {
             <div class="input-group" style="max-width: 400px">
-                <input class="form-control" @bind="_editorPromptName" />
+                <input class="form-control" @bind="_editorPromptName" onkeyup="const e=document.createEvent('HTMLEvents'); e.initEvent('change', false, true);this.dispatchEvent(e)" />
                 <div class="input-group-append">
                     <span class="input-group-text">.cs</span>
                 </div>
                 <div class="input-group-append">
-                    <button class="btn btn-success" @onclick="SaveEditorPrompt">Save</button>
+                    <button class="btn btn-success" @onclick="SaveEditorPrompt" disabled="@(_editorPromptName == _renameScriptOriginalName)">Save</button>
                     <button class="btn btn-warning" @onclick="CancelEditorPrompt">Cancel</button>
                 </div>
             </div>
         }
+        @if (_editorPromptError != string.Empty)
+        {
+            <div class="alert alert-warning">@_editorPromptError</div>
+        }
     </div>
 }
-<div id="code-editor" class="w-auto" style="min-height: 500px; height: calc(100vh - 200px)"></div>
+<div id="code-editor" class="w-auto" style="min-height: 500px; height: calc(100vh - 180px)"></div>
 
 @code {
     
@@ -60,6 +64,7 @@
     private EditorPromptType _editorPromptType = EditorPromptType.None;
     private string _editorPromptName = string.Empty;
     private string _renameScriptOriginalName = string.Empty;
+    private string _editorPromptError = string.Empty;
 
     private string _fullEditorPromptName
     {
@@ -72,6 +77,13 @@
 
     public IEnumerable<(string, string)> Sources => _sources.Select(s => (s.Key, s.Value));
     public Task TriggerSave() => SaveSource();
+
+    public async Task GetExampleScripts()
+    {
+        _sources.Clear();
+        await LocalStorage.ClearAsync();
+        await ReadSources();
+    }
     
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -89,6 +101,8 @@
     private void CancelEditorPrompt()
     {
         _editorPromptType = EditorPromptType.None;
+        _editorPromptName = string.Empty;
+        _editorPromptError = string.Empty;
     }
 
     private void RenameScript(string name)
@@ -103,7 +117,7 @@
         _fullEditorPromptName = name;
         _editorPromptType = EditorPromptType.Delete;
     }
-    
+
     private async Task SaveEditorPrompt()
     {
         switch (_editorPromptType)
@@ -119,32 +133,41 @@
                 StateHasChanged();
                 break;
             case EditorPromptType.Add:
-                if (_editorPromptName != string.Empty)
+                if (_editorPromptName == string.Empty)
                 {
-                    _sources.Add(_fullEditorPromptName, "using PondSharp.UserScripts;\n\n\nnamespace PondSharp.Examples {\n\n\n}");
-                    await SelectSource(_fullEditorPromptName);
-                    await WriteAllSources();
-                    _editorPromptType = EditorPromptType.None;
-                    StateHasChanged();
+                    _editorPromptError = "Name cannot be empty";
+                    break;
                 }
+                if (_sourceNames.Contains(_fullEditorPromptName))
+                {
+                    _editorPromptError = $"{_fullEditorPromptName} already exists";
+                }
+                _sources.Add(_fullEditorPromptName, "using PondSharp.UserScripts;\n\n\nnamespace PondSharp.Examples {\n\n\n}");
+                await SelectSource(_fullEditorPromptName);
+                await WriteAllSources();
+                CancelEditorPrompt();
+                StateHasChanged();
                 break;
             case EditorPromptType.Rename:
-                if (_editorPromptName != string.Empty && _sources.ContainsKey(_renameScriptOriginalName))
+                if (_editorPromptName == string.Empty)
                 {
-                    if (_selectedSource == _renameScriptOriginalName)
-                    {
-                        await SaveSource();
-                    }
-                    _sources.Add(_fullEditorPromptName, _sources[_renameScriptOriginalName]);
-                    _sources.Remove(_renameScriptOriginalName);
-                    if (_selectedSource == _renameScriptOriginalName)
-                    {
-                        await SelectSource(_fullEditorPromptName, false);
-                    }
-                    await WriteAllSources();
-                    _editorPromptType = EditorPromptType.None;
-                    StateHasChanged();
+                    _editorPromptError = "Name cannot be empty";
+                    break;
                 }
+                if (_sourceNames.Contains(_fullEditorPromptName))
+                {
+                    _editorPromptError = $"{_fullEditorPromptName} already exists";
+                    break;
+                }
+                if (_selectedSource == _renameScriptOriginalName)
+                    await SaveSource();
+                _sources.Add(_fullEditorPromptName, _sources[_renameScriptOriginalName]);
+                _sources.Remove(_renameScriptOriginalName);
+                if (_selectedSource == _renameScriptOriginalName)
+                    await SelectSource(_fullEditorPromptName, false);
+                await WriteAllSources();
+                CancelEditorPrompt();
+                StateHasChanged();
                 break;
             default:
                 throw new ArgumentOutOfRangeException();

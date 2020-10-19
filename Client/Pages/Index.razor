@@ -4,15 +4,12 @@
 @using PondSharp.Client.IDE
 @using System.Timers
 @inject HttpClient Http
-
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
 
 <div class="container-fluid">
     <div class="row">
         <div class="col">
-            <h1>PondSharp</h1>
-            <div class="blockquote">
-                An alpha techdemo of in-browser C# (.NET Standard) compiliation and injection into WASM.
-            </div>
+            <h1>PondSharp <span class="main-subheading">An alpha tech demo of in-browser C# (.NET Standard) compiliation.</span></h1>
         </div>
     </div>
     <div class="row">
@@ -26,9 +23,9 @@
             </div>
             <div class="row">
                 <div class="col">
-                    <h3>Create Entities:</h3>
                     @if (IsCompiled)
                     {
+                        <h4>Create Entities</h4>
                         @foreach (var (type, name) in _availableEntityTypes)
                         {
                             
@@ -46,10 +43,10 @@
                 </div>
                 <div class="col w-25">
                     <div>
-                        <h3>Stats:</h3>
-                        <div style="font-family: monospace">TPS: <span>@(Math.Ceiling(1000 / (_manager?.CurrentTickTime ?? 1)))</span></div>
-                        <div style="font-family: monospace">Entities: <span>@(_engine?.Entities.Count() ?? 0)</span></div>
+                        <h4>Stats</h4>
                         <div style="font-family: monospace">@_output</div>
+                        <div style="font-family: monospace">TPS: <span>@(Math.Ceiling(1000 / (_manager?.CurrentTickTime ?? 1)))</span></div>
+                        <pre>@(_entityCountsByType)</pre>
                     </div>
                 </div>
             </div>
@@ -72,9 +69,11 @@
         <div class="col">
             <p>
                 <strong>How:</strong> Edit code with the editor on the right. Any changes you make are
-                automatically save to localStorage. Once ready, click "Compile" to compile and load
-                the generated assembly into the simulation. You can then create instances of each found entity which
-                extends AbstractEntity and load them into the world. Once ready, click "Start"!
+                automatically save to localStorage 
+                (<a href="javascript:void(0)" @onclick="GetExampleScripts">reset to examples</a>). Once ready, click 
+                "Compile" to compile and load the generated assembly into the simulation. You can then create instances
+                of each found entity which extends AbstractEntity and load them into the world. Once ready, click 
+                "Start"!
             </p>
             <p>
                 Under the create entities, you can choose how many you want to create. To clear out all the entities,
@@ -85,7 +84,12 @@
                 <a href="https://github.com/mrkmg">Kevin Gravier</a> and will eventually become open-sourced.
             </p>
             <p>
-                <strong>What:</strong> A simulation to tech demo in browser c# .Net Standard compilation and execution.
+                <strong>What:</strong> A simulation to tech demo in browser c# .Net Standard compilation and execution
+                using 
+                <a href="https://dotnet.microsoft.com/apps/aspnet/web-apps/blazor">Blazor</a>, 
+                <a href="https://getbootstrap.com/">Bootstrap</a>,
+                <a href="https://www.pixijs.com/">PixiJS</a>, and
+                <a href="https://microsoft.github.io/monaco-editor/">Monaco Editor</a>.
             </p>
             <p>
                 <strong>Where:</strong>
@@ -108,10 +112,29 @@
     private IList<string> _errors = new List<string>();
     private CSharpClassCompiler _compiler;
     private bool _compilerReady;
-    
+
     private (string, string)[] _availableEntityTypes = new (string, string)[0];
+
+    private string _entityCountsByType
+    {
+        get
+        {
+            if (_engine == null) return "";
+            var typeCounts = _availableEntityTypes.ToDictionary(a => a.Item1, a => 0);
+            typeCounts.Add("*Other", 0);
+            foreach (var entity in _engine.Entities)
+                typeCounts[entity.GetType().FullName ?? "*Other"]++;
+            
+            return string.Join('\n', 
+                typeCounts
+                    .Where(tc => tc.Value != 0)
+                    .Select(typeCount => $"{typeCount.Key}: {typeCount.Value}")
+            );
+        }
+    }
+
     private Dictionary<string, int> _countToCreate = new Dictionary<string, int>();
-    
+
     private PondEngine _engine;
     private PondCanvas _canvas;
     private PondManager _manager;
@@ -120,7 +143,6 @@
     const int GridSize = 2;
     const int PondWidth = 300;
     const int PondHeight = 300;
-
 
     private bool IsCompiled => _compiler?.HasAssembly ?? false;
     private bool IsRunning => _manager?.IsRunning ?? false;
@@ -158,16 +180,21 @@
         }
     }
 
-    private void CreateEntity(string fullName)
+    private async Task CreateEntity(string fullName)
     {
         for (var i = 0; i < _countToCreate[fullName]; i++) 
             RealCreateEntity(fullName);
+        
+        await LocalStorage.SetItemAsync($"ec-{fullName}", _countToCreate[fullName]);
     }
     
     private void RealCreateEntity(string fullName)
     {
         _manager.InitializeAndCreateEntity(_compiler.New<AbstractEntity>(fullName));
     }
+
+    private Task GetExampleScripts() =>
+        _ideElement.GetExampleScripts();
 
     private async Task CompileSource()
     {
@@ -186,9 +213,19 @@
                 .Select(t => (t, t.Split('.').Last()))
                 .ToArray();
             if (_availableEntityTypes.Length == 0) throw new Exception("No found classes which extend AbstractEntity");
-            _countToCreate = _availableEntityTypes.Select(t => (t.Item1, 10)).ToDictionary(t => t.Item1, t => t.Item2);
-            _output = "Ready";
+            _countToCreate.Clear();
+            foreach (var (fullName, _) in _availableEntityTypes)
+            {
+                Console.WriteLine(fullName);
+                if (await LocalStorage.ContainKeyAsync($"ec-{fullName}"))
+                    _countToCreate.Add(fullName, await LocalStorage.GetItemAsync<int>($"ec-{fullName}"));
+                else if (fullName == "PondSharp.Examples.Complex")
+                    _countToCreate.Add(fullName, 200);
+                else
+                    _countToCreate.Add(fullName, 10);
 
+            }
+            await StartPond();
             StateHasChanged();
         }
         catch (CompileException e)

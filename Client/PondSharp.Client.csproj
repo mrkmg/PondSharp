@@ -4,6 +4,7 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <RazorLangVersion>3.0</RazorLangVersion>
     <BlazorEnableCompression>false</BlazorEnableCompression>
+    <AssemblyVersion>1.0.1</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,15 +26,36 @@
   <ItemGroup>
     <None Include="wwwroot\user-scripts\**" />
     <None Remove="wwwroot\js\**" />
-    <ExampleFiles Include="..\Examples\*.cs" />
+    <None Remove="wwwroot\sample-project.zip" />
+    <ExampleFiles Include="$(SolutionDir)Examples\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="SampleProject\**" />
+    <Compile Remove="SampleProject\**" />
+    <EmbeddedResource Remove="SampleProject\**" />
+    <Content Remove="SampleProject\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\user-scripts" />
   </ItemGroup>
   
   <Target Name="CopyExampleScripts" BeforeTargets="BeforeCompile">
-    <Copy SourceFiles="@(ExampleFiles)" DestinationFiles="@(ExampleFiles->'.\wwwroot\user-scripts\%(Filename)%(Extension).txt')" />
+    <Message Text="Copying Example Files" Importance="high" />
+    <Copy SourceFiles="@(ExampleFiles)" DestinationFiles="@(ExampleFiles->'$(ProjectDir)\wwwroot\user-scripts\%(RecursiveDir)%(Filename)%(Extension).txt')" />
+    <Copy SourceFiles="@(ExampleFiles)" DestinationFiles="@(ExampleFiles->'$(ProjectDir)\SampleProject\PondSharp.Examples\%(RecursiveDir)%(Filename)%(Extension)')" />
   </Target>
   
-  <Target Name="BuildWebAssets" BeforeTargets="BeforeCompile">
-    <Message Text="Running NPM Build" />
-    <Exec Condition="$(Configuration) == 'Release'" Command="npm run build:release" />
+  <Target Name="MakeSampleZip" BeforeTargets="BeforeCompile">
+    <Message Text="Copying UserScripts DLL" Importance="high" />
+    <Copy SourceFiles="$(SolutionDir)UserScripts\bin\$(Configuration)\netstandard2.1\PondSharp.UserScripts.dll;$(SolutionDir)UserScripts\bin\$(Configuration)\PondSharp.UserScripts.xml" DestinationFolder="SampleProject\PondSharp.Examples" />
+    <Message Text="Creating Sample Project ZIP" Importance="high" />
+    <ZipDirectory DestinationFile="wwwroot\sample-project.zip" SourceDirectory="SampleProject" Overwrite="true" />
+  </Target>
+  
+  <Target Name="BuildWebAssets" BeforeTargets="BeforeCompile" Condition="$(Configuration) == 'Release'">
+    <Message Text="Running NPM Build" Importance="high" />
+    <Exec Command="npm run build:release" />
   </Target>
 </Project>

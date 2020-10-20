@@ -3,18 +3,42 @@ using System.Collections.Generic;
 
 namespace PondSharp.UserScripts
 {
+    /// <summary>
+    /// Abstract entity class. All entities should extend this class to be properly loaded into the Pond.
+    /// </summary>
     public abstract class AbstractEntity : IAbstractEntity
     {
+        /// <inheritdoc />
         public string Id { get; private set; }
         private IEngine Engine { get; set; }
-        
+
+        /// <inheritdoc />
         public int X { get; internal set; }
+
+        /// <inheritdoc />
         public int Y { get; internal set; }
+
+        /// <inheritdoc />
         public int Color { get; internal set; }
+
+        /// <inheritdoc />
         public int ViewDistance { get; internal set; }
+
+        /// <inheritdoc />
+        public int WorldMinX => Engine.MinX;
+
+        /// <inheritdoc />
+        public int WorldMaxX => Engine.MaxX;
+
+        /// <inheritdoc />
+        public int WorldMinY => Engine.MinY;
+
+        /// <inheritdoc />
+        public int WorldMaxY => Engine.MaxY;
 
         private bool _intialized;
 
+        /// <inheritdoc />
         public virtual void Initialize(string id, IEngine engine, int x = 0, int y = 0, int color = 0xFFFFFF, int viewDistance = 0)
         {
             if (_intialized) throw new AlreadyInitializedException();
@@ -29,18 +53,28 @@ namespace PondSharp.UserScripts
             OnCreated();
         }
 
+        /// <inheritdoc />
         public bool CanMoveTo(int x, int y) => Engine.CanMoveTo(this, x, y);
+
+        /// <inheritdoc />
         public bool MoveTo(int x, int y) => Engine.MoveTo(this, x, y);
 
+        /// <inheritdoc />
         public bool CanChangeColorTo(int color) => Engine.CanChangeColorTo(this, color);
+
+        /// <inheritdoc />
         public bool ChangeColor(int color) => Engine.ChangeColorTo(this, color);
+
+        /// <inheritdoc />
         public IEnumerable<IAbstractEntity> VisibleEntities => Engine.GetVisibleEntities(this);
 
+        /// <inheritdoc />
         public virtual void OnCreated() {}
-        public abstract void Tick();
 
-        public class AlreadyInitializedException : Exception
-        {
-        }
+        /// <inheritdoc />
+        public virtual void OnDestroy() {}
+
+        /// <inheritdoc />
+        public abstract void Tick();
     }
 }

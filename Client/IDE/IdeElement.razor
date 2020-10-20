@@ -1,12 +1,14 @@
 @using System.Text
+@using PondSharp.UserScripts
+@using System.Reflection
 <!-- ReSharper disable once InconsistentNaming -->
 @inject IJSRuntime JSRuntime
 @inject Blazored.LocalStorage.ILocalStorageService LocalStorage
 @inject HttpClient Http
 
 <div class="editor-files">
-    <div class="btn-group btn-group-sm">
-        @foreach (var name in _sourceNames)
+    <div class="btn-group btn-group-sm top-tabs">
+        @foreach (var name in SourceNames)
         {
             <button class="btn @(_selectedSource == name ? "btn-primary" : "btn-secondary")" @onclick="e => SelectSource(name)">
                 @name
@@ -54,11 +56,12 @@
     </div>
 }
 <div id="code-editor" class="w-auto" style="min-height: 500px; height: calc(100vh - 180px)"></div>
+<div>PondSharp.UserScripts Version: <span>@UserScriptsVersion</span></div>
 
 @code {
     
+    private CSharpClassCompiler _compiler;
     private Dictionary<string, string> _sources = new Dictionary<string, string>();
-    private IEnumerable<string> _sourceNames => _sources.Keys.OrderBy(s => s);
     private string _selectedSource = string.Empty;
     private enum EditorPromptType {None, Delete, Add, Rename};
     private EditorPromptType _editorPromptType = EditorPromptType.None;
@@ -66,7 +69,15 @@
     private string _renameScriptOriginalName = string.Empty;
     private string _editorPromptError = string.Empty;
 
-    private string _fullEditorPromptName
+    public Task TriggerSave() => SaveSource();
+    public bool IsCompiled => _compiler?.HasAssembly ?? false;
+    private IEnumerable<string> SourceNames => _sources.Keys.OrderBy(s => s);
+    private IEnumerable<(string path, string source)> Sources => _sources.Select(s => (s.Key, s.Value));
+    private string UserScriptsVersion => Assembly
+        .GetAssembly(typeof(IAbstractEntity))
+        .GetName().Version.ToString();
+    
+    private string FullEditorPromptName
     {
         get => $"{_editorPromptName}.cs";
         set {
@@ -74,17 +85,40 @@
             _editorPromptName = value.Substring(0, value.Length - 3);
         }
     }
-
-    public IEnumerable<(string path, string source)> Sources => _sources.Select(s => (s.Key, s.Value));
-    public Task TriggerSave() => SaveSource();
-
+    
     public async Task GetExampleScripts()
     {
         _sources.Clear();
         await LocalStorage.ClearAsync().ConfigureAwait(false);
         await ReadSources().ConfigureAwait(false);
     }
+
+    public IEnumerable<(string fullName, string name)> GetTypesOf(Type type) =>
+        _compiler
+            .AvailableInstances(type)
+            .Select(t => (t, t.Split('.').Last()));
+
+    public T CreateInstance<T>(string fullName) where T : class =>
+        _compiler.New<T>(fullName);
     
+    public async Task Compile()
+    {
+        await SaveSource().ConfigureAwait(false);
+        _compiler.Compile(Sources);
+    }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        var types = new List<Type>
+        {
+            typeof(object),
+            typeof(AbstractEntity),
+            typeof(System.Drawing.Color),
+            typeof(Enumerable)
+        };
+        _compiler = await CSharpClassCompiler.Make(types, Http.BaseAddress).ConfigureAwait(false);
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
@@ -107,14 +141,14 @@
 
     private void RenameScript(string name)
     {
-        _fullEditorPromptName = name;
+        FullEditorPromptName = name;
         _renameScriptOriginalName = name;
         _editorPromptType = EditorPromptType.Rename;
     }
 
     private void DeleteScript(string name)
     {
-        _fullEditorPromptName = name;
+        FullEditorPromptName = name;
         _editorPromptType = EditorPromptType.Delete;
     }
 
@@ -125,9 +159,9 @@
             case EditorPromptType.None:
                 throw new InvalidOperationException("Can't save a prompt of None type");   
             case EditorPromptType.Delete:
-                _sources.Remove(_fullEditorPromptName);
-                if (_selectedSource == _fullEditorPromptName && _sources.Count > 0) 
-                    await SelectSource(_sourceNames.First(), _selectedSource != _fullEditorPromptName).ConfigureAwait(false);
+                _sources.Remove(FullEditorPromptName);
+                if (_selectedSource == FullEditorPromptName && _sources.Count > 0) 
+                    await SelectSource(SourceNames.First(), _selectedSource != FullEditorPromptName).ConfigureAwait(false);
                 await WriteAllSources().ConfigureAwait(false);
                 _editorPromptType = EditorPromptType.None;
                 StateHasChanged();
@@ -138,12 +172,12 @@
                     _editorPromptError = "Name cannot be empty";
                     break;
                 }
-                if (_sourceNames.Contains(_fullEditorPromptName))
+                if (SourceNames.Contains(FullEditorPromptName))
                 {
-                    _editorPromptError = $"{_fullEditorPromptName} already exists";
+                    _editorPromptError = $"{FullEditorPromptName} already exists";
                 }
-                _sources.Add(_fullEditorPromptName, "using PondSharp.UserScripts;\n\n\nnamespace PondSharp.Examples {\n\n\n}");
-                await SelectSource(_fullEditorPromptName).ConfigureAwait(false);
+                _sources.Add(FullEditorPromptName, "using PondSharp.UserScripts;\n\n\nnamespace PondSharp.Examples {\n\n\n}");
+                await SelectSource(FullEditorPromptName).ConfigureAwait(false);
                 await WriteAllSources().ConfigureAwait(false);
                 CancelEditorPrompt();
                 StateHasChanged();
@@ -154,17 +188,17 @@
                     _editorPromptError = "Name cannot be empty";
                     break;
                 }
-                if (_sourceNames.Contains(_fullEditorPromptName))
+                if (SourceNames.Contains(FullEditorPromptName))
                 {
-                    _editorPromptError = $"{_fullEditorPromptName} already exists";
+                    _editorPromptError = $"{FullEditorPromptName} already exists";
                     break;
                 }
                 if (_selectedSource == _renameScriptOriginalName)
                     await SaveSource().ConfigureAwait(false);
-                _sources.Add(_fullEditorPromptName, _sources[_renameScriptOriginalName]);
+                _sources.Add(FullEditorPromptName, _sources[_renameScriptOriginalName]);
                 _sources.Remove(_renameScriptOriginalName);
                 if (_selectedSource == _renameScriptOriginalName)
-                    await SelectSource(_fullEditorPromptName, false).ConfigureAwait(false);
+                    await SelectSource(FullEditorPromptName, false).ConfigureAwait(false);
                 await WriteAllSources().ConfigureAwait(false);
                 CancelEditorPrompt();
                 StateHasChanged();
@@ -188,7 +222,7 @@
         await WriteAllSources().ConfigureAwait(false);
     }
 
-    private ValueTask WriteAllSources() => LocalStorage.SetItemAsync("savedScripts", _sources.Select(s => new SavedSource
+    private ValueTask WriteAllSources() => LocalStorage.SetItemAsync(_savedScriptsKey, _sources.Select(s => new SavedSource
     {
         Name = s.Key,
         Source = s.Value
@@ -201,7 +235,8 @@
             "BaseEntity.cs",
             "Rand.cs",
             "Clustering.cs",
-            "Simple.cs"
+            "Simple.cs",
+            "Cooperative.cs"
         };
         _sources.Clear();
         foreach (var sourceFile in sourceFiles)
@@ -211,12 +246,13 @@
         }
     }
 
+    private string _savedScriptsKey => $"saved_scripts:{UserScriptsVersion}";
     private async Task ReadSources()
     {
-        var hasLocalScripts = await LocalStorage.ContainKeyAsync("savedScripts").ConfigureAwait(false);
+        var hasLocalScripts = await LocalStorage.ContainKeyAsync(_savedScriptsKey).ConfigureAwait(false);
         if (hasLocalScripts)
         {
-            var sources = await LocalStorage.GetItemAsync<SavedSource[]>("savedScripts").ConfigureAwait(false);
+            var sources = await LocalStorage.GetItemAsync<SavedSource[]>(_savedScriptsKey).ConfigureAwait(false);
             _sources = sources.ToDictionary(s => s.Name, s => s.Source);
         }
         if (_sources.Count == 0)

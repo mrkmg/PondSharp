@@ -3,8 +3,13 @@ using System.Collections.Generic;
 
 namespace PondSharp.UserScripts
 {
+#pragma warning disable 1591
     public interface IEngine
     {
+        int MinX { get; }
+        int MaxX { get; }
+        int MinY { get; }
+        int MaxY { get; }
         IEnumerable<IAbstractEntity> Entities { get; }
         IAbstractEntity GetEntity(string entityId);
         bool CanMoveTo(IAbstractEntity entity, int x, int y);
@@ -19,4 +24,5 @@ namespace PondSharp.UserScripts
         event EventHandler<IAbstractEntity> EntityAdded;
         event EventHandler<int> EntityColorChanged;
     }
+#pragma warning restore 1591
 }

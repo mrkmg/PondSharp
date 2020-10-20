@@ -4,6 +4,17 @@
         <TargetFramework>netstandard2.1</TargetFramework>
         <RootNamespace>PondSharp.UserScripts</RootNamespace>
         <AssemblyName>PondSharp.UserScripts</AssemblyName>
+        <AssemblyVersion>1.0.0.*</AssemblyVersion>
+        <Deterministic>False</Deterministic>
+        <FileVersion>1.0.0.0</FileVersion>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+      <DocumentationFile>bin\Debug\PondSharp.UserScripts.xml</DocumentationFile>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+      <DocumentationFile>bin\Release\PondSharp.UserScripts.xml</DocumentationFile>
     </PropertyGroup>
 
 </Project>

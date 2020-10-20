@@ -1,0 +1,225 @@
+﻿@page "/"
+@using PondSharp.UserScripts
+@using PondSharp.Client.Pond
+@using PondSharp.Client.IDE
+@using System.Timers
+@inject HttpClient Http
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+
+<div class="container-fluid">
+    <div class="row">
+        <Header></Header>
+    </div>
+    <div class="row">
+        <div class="col-auto" style="width: @(PondWidth * GridSize + 10)px">
+            <PondCanvas @ref="_canvas" Width="@PondWidth" Height="@PondHeight" GridSize="@GridSize"></PondCanvas>
+            <div class="row">
+                <div class="col-auto">
+                    <div class="btn-group bottom-tabs">
+                        <button class="btn btn-primary" @onclick="CompileSource">Compile</button>
+                        <button class="btn btn-success" @onclick="StartPond" disabled="@(!_ideElement?.IsCompiled ?? IsRunning)">Start</button>
+                        <button class="btn btn-warning" @onclick="StopPond" disabled="@(!IsRunning)">Stop</button>
+                        <button class="btn btn-danger" @onclick="Reset" disabled="@(!IsRunning)">Reset</button>
+                    </div>
+                </div>
+                <div class="col text-monospace">
+                    <span>@_output</span> | 
+                    <span>TPS: <span>@(Math.Ceiling(1000 / (_manager?.CurrentTickTime ?? 1)))</span></span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    @code { private string _selectedType = string.Empty; }
+                    @if (_availableEntityTypes.Any())
+                    {
+                        <hr />
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <button class="btn btn-outline-primary" 
+                                        @onclick="@(e => CreateEntity(_selectedType))"
+                                        disabled="@(!_ideElement.IsCompiled)">Create</button>
+                            </div>
+                            <input class="form-control input-count" type="number" @bind="_countToCreate[_selectedType]" min="1"/>
+                            <select class="form-control" @bind="_selectedType">
+                                @foreach (var (type, name) in _availableEntityTypes)
+                                {
+                                    <option value="@type">@name</option>
+                                }
+                            </select>
+                            <div class="input-group-append">
+                                <span class="input-group-text">Entities</span>
+                            </div>
+                        </div>
+                    }
+                    <pre>@(EntityCountsByType)</pre>
+                </div>
+            </div>
+        </div>
+        <div class="col overflow-hidden">
+            <IdeElement @ref="_ideElement"></IdeElement>
+            @if (_errors.Count > 0)
+            {
+                <div class="bg-warning">
+                    @foreach (var error in _errors)
+                    {
+                        <div class="border-bottom">@error</div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+    <hr />
+    <div class="row">
+        <div class="col">
+            <Information OnDoReset="@GetExampleScripts"></Information>
+        </div>
+    </div>
+</div>
+
+@code
+{
+    private string _output = "No Instance Loaded";
+    private IList<string> _errors = new List<string>();
+
+    private (string fullName, string name)[] _availableEntityTypes = new (string, string)[0];
+
+    private string EntityCountsByType
+    {
+        get
+        {
+            if (_engine == null) return "";
+            var typeCounts = _availableEntityTypes.ToDictionary(a => a.fullName, a => 0);
+            typeCounts.Add("*Other", 0);
+            foreach (var entity in _engine.Entities)
+                typeCounts[entity.GetType().FullName ?? "*Other"]++;
+            
+            return string.Join('\n', 
+                typeCounts
+                    .Where(tc => tc.Value != 0)
+                    .Select(typeCount => $"{typeCount.Key}: {typeCount.Value}")
+            );
+        }
+    }
+
+    private readonly Dictionary<string, int> _countToCreate = new Dictionary<string, int>();
+
+    private PondEngine _engine;
+    private PondCanvas _canvas;
+    private PondManager _manager;
+    private IdeElement _ideElement;
+    
+    const int GridSize = 3;
+    const int PondWidth = 200;
+    const int PondHeight = 200;
+
+    private bool IsRunning => _manager?.IsRunning ?? false;
+    
+    private Timer _debugUpdateTimer = new Timer(1000);
+
+    protected override void OnInitialized()
+    {
+        _debugUpdateTimer.Elapsed += (_,__) => StateHasChanged();
+        
+        _engine = new PondEngine(-PondWidth/2, PondWidth/2-1, -PondHeight/2, PondHeight/2-1);
+        TryCreatePondManager();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (!firstRender) return;
+        
+        TryCreatePondManager();
+    }
+
+    private void TryCreatePondManager()
+    {
+        if (_manager == null && _engine != null && _canvas != null)
+        {
+            _manager = new PondManager(_engine, _canvas);
+        }
+    }
+
+    private async Task CreateEntity(string fullName)
+    {
+        for (var i = 0; i < _countToCreate[fullName]; i++) 
+            RealCreateEntity(fullName);
+        
+        await LocalStorage.SetItemAsync($"ec-{fullName}", _countToCreate[fullName]).ConfigureAwait(false);
+    }
+    
+    private void RealCreateEntity(string fullName)
+    {
+        _manager.InitializeAndCreateEntity(_ideElement.CreateInstance<AbstractEntity>(fullName));
+    }
+
+    private Task GetExampleScripts() =>
+        _ideElement.GetExampleScripts();
+
+    private async Task CompileSource()
+    {
+        await Reset().ConfigureAwait(false);
+
+        try
+        {
+            _output = "Compiling";
+            _errors.Clear();
+            StateHasChanged();
+            await Task.Delay(TimeSpan.FromMilliseconds(100)).ConfigureAwait(false);
+            await _ideElement.Compile();
+            _availableEntityTypes = _ideElement.GetTypesOf(typeof(IAbstractEntity)).ToArray();
+            if (!_availableEntityTypes.Select(a => a.fullName).Contains(_selectedType))
+                _selectedType = _availableEntityTypes.First().fullName;
+            if (_availableEntityTypes.Length == 0) throw new Exception("No found classes which extend IAbstractEntity");
+            _countToCreate.Clear();
+            foreach (var (fullName, _) in _availableEntityTypes)
+            {
+                Console.WriteLine(fullName);
+                if (await LocalStorage.ContainKeyAsync($"ec-{fullName}").ConfigureAwait(false))
+                    _countToCreate.Add(fullName, await LocalStorage.GetItemAsync<int>($"ec-{fullName}").ConfigureAwait(false));
+                else if (fullName == "PondSharp.Examples.Clustering")
+                    _countToCreate.Add(fullName, 50);
+                else
+                    _countToCreate.Add(fullName, 10);
+
+            }
+            await StartPond().ConfigureAwait(false);
+            StateHasChanged();
+        }
+        catch (CompileException e)
+        {
+            _errors = e.Errors.ToList();
+            _output = "Compilation Failure";
+            StateHasChanged();
+        }
+        catch (Exception e)
+        {
+            _errors = new List<string>(new[] {e.Message});
+            _output = "Unknown Failure";
+            StateHasChanged();
+        }
+    }
+
+    private async Task StartPond()
+    {
+        await _manager.Start().ConfigureAwait(false);
+        _debugUpdateTimer.Start();
+        _output = "Running";
+    }
+
+    private async Task StopPond()
+    {
+        await _manager.Stop().ConfigureAwait(false);
+        _debugUpdateTimer.Stop();
+        _output = "Running";
+    }
+
+    private async Task Reset()
+    {
+        foreach (var instance in _engine.Entities)
+        {
+            await _canvas.DestroyEntity(instance.Id).ConfigureAwait(false);
+        }
+        _engine.ClearAllEntities();
+    }
+
+}

@@ -3,8 +3,14 @@ using System.Collections.Generic;
 
 namespace PondSharp.UserScripts
 {
+#pragma warning disable 1591
     public abstract class AbstractEngine : IEngine
     {
+        public int MinX { get; protected set; }
+        public int MaxX { get; protected set; }
+        public int MinY { get; protected set; }
+        public int MaxY { get; protected set; }
+        
         public abstract IEnumerable<IAbstractEntity> Entities { get; }
         public abstract IAbstractEntity GetEntity(string entityId);
         public IEnumerable<IAbstractEntity> GetVisibleEntities(string entityId) => GetVisibleEntities(GetEntity(entityId));
@@ -74,4 +80,5 @@ namespace PondSharp.UserScripts
         
         
     }
+#pragma warning restore 1591
 }

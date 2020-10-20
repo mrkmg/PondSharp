@@ -6,10 +6,10 @@ namespace PondSharp.Examples
     {
         public override void OnCreated()
         {
-            if (_random.Next(1) == 0)
-                _forceX = _random.Next(1) == 0 ? 1 : -1;
+            if (_random.Next(2) == 0)
+                _forceX = _random.Next(2) == 0 ? 1 : -1;
             else
-                _forceX = _random.Next(1) == 0 ? 1 : -1;
+                _forceY = _random.Next(2) == 0 ? 1 : -1;
         }
         
         public override void Tick()

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
-namespace PondSharp.Client
+namespace PondSharp.Client.IDE
 {
     public sealed class CSharpClassCompiler
     {

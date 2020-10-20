@@ -1,4 +1,6 @@
 const path = require('path');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+
 module.exports = {
     devtool: 'cheap-source-map',
     watchOptions: {
@@ -38,6 +40,7 @@ module.exports = {
             }
         }
     },
+    plugins: [new CleanWebpackPlugin()],
     entry: {
         main: {import: './ts/main.ts'},
     },

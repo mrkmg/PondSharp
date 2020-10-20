@@ -1,4 +1,4 @@
-[*.{cs,razor}]
+[*]
 # ASYNC0004: Use ConfigureAwait(false) on await expression
 dotnet_diagnostic.ASYNC0004.severity = error
 dotnet_diagnostic.ASYNC0001.severity = none

@@ -9,7 +9,6 @@ namespace PondSharp.Examples
     public class Clustering : BaseEntity
     {
         private int _thinkCooldown;
-        private int _fleeCooldown;
         private bool _isFleeing;
         private (int X, int Y) _lastForce = (0, 0);
         
@@ -32,47 +31,38 @@ namespace PondSharp.Examples
 
         private void SetDirection()
         {
+            if (_thinkCooldown > 1)
+            {
+                _thinkCooldown--;
+                return;
+            }
 
             var entities = VisibleEntities.ToList();
             if (CheckFlee(entities)) return;
-            
-            if (_isFleeing)
-            {
-                if (_fleeCooldown > 0) _fleeCooldown--;
-                else
-                {
-                    (_forceX, _forceY) = _lastForce;
-                    _isFleeing = false;
-                }
-                return;
-            }
-            
-            if (_thinkCooldown > 1) _thinkCooldown--;
-            else
-            {
-                ChooseForceDirections(entities);
-            }
+                
+            ChooseForceDirections(entities);
 
-            if (_random.Next(100) == 0) 
-            {
-                ChooseRandomDirection();
-                _thinkCooldown = _random.Next(100);
-            }
+            if (_random.Next(100) != 0) return;
+            
+            ChooseRandomDirection();
+            _thinkCooldown = _random.Next(100);
         }
 
-        private bool CheckFlee(IEnumerable<IAbstractEntity> entities)
+        private bool CheckFlee(IList<IAbstractEntity> entities)
         {
+            if (!entities.Any()) return false;
+            
             var closestEntity = entities
                 .OrderBy(e => EntityDist(this, e))
                 .First();
             var closestDistance = EntityDist(this, closestEntity);
 
-            if (closestDistance >= 3) return false;
+            if (closestDistance > 3) return false;
             _lastForce = (_forceX, _forceY);
             (_forceX, _forceY) = GetForceDirection(X - closestEntity.X, Y - closestEntity.Y);
             if (_forceX == 0 && _forceY == 0) ChooseRandomDirection();
             _isFleeing = true;
-            _fleeCooldown = (int) Math.Pow(3 - closestDistance, 2);
+            _thinkCooldown = _random.Next(5, 20);;
             return true;
         }
 
@@ -88,7 +78,7 @@ namespace PondSharp.Examples
             {
                 // Move away from group center
                 (_forceX, _forceY) = GetForceDirection(X - groupCenterX, Y - groupCenterY);
-                _thinkCooldown = entities.Count > 20 ? 10 : 5;
+                _thinkCooldown = entities.Count > 20 ? 20 : 10;
             } else if (Dist(X, Y, groupCenterX, groupCenterY) > 5)
             {
                 // Move toward group center

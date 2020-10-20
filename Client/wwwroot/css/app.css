@@ -67,12 +67,11 @@ app {
 }
 
 .editor-files {
-    background: black;
     border-radius: .2rem .2rem 0 0;
     overflow-x: auto;
 }
-.editor-prompt {
-    background: black;
+.editor-prompt .btn, .editor-prompt .form-control, .editor-prompt .input-group-append, .editor-prompt .input-group-prepend {
+    border-radius: 0 !important;
 }
 
 .btn-icon {

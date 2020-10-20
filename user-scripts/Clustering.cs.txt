@@ -7,6 +7,10 @@ namespace PondSharp.Examples
 {
     public class Clustering : BaseEntity
     {
+        const int baseColor = 0xFFFFFF;
+        const int joiningColor = 0x55FF55;
+        const int separatingColor = 0x5555FF;
+        const int fleeingColor = 0xFF5555;
         private int _thinkCooldown;
 
         private int RndThinkDelay(int max, int curve = 4, int divisors = 20) =>
@@ -14,6 +18,7 @@ namespace PondSharp.Examples
         
         public override void OnCreated()
         {
+            ChangeColor(baseColor);
             ChooseRandomDirection();
         }
         
@@ -60,13 +65,18 @@ namespace PondSharp.Examples
             if (closestDistance > 3) return false;
             (_forceX, _forceY) = GetForceDirection(X - closestEntity.X, Y - closestEntity.Y);
             if (_forceX == 0 && _forceY == 0) ChooseRandomDirection();
-            _thinkCooldown = RndThinkDelay(50, 6);
+            _thinkCooldown = RndThinkDelay(30, 6);
+            ChangeColor(fleeingColor);
             return true;
         }
 
         private void ChooseForceDirections(IList<IAbstractEntity> entities)
         {
-            if (entities.Count == 0) return;
+            if (entities.Count == 0) 
+            {
+                ChangeColor(baseColor);
+                return;
+            }
             
             var (tx, ty) = entities
                 .Aggregate<IAbstractEntity, (int X, int Y)>((0, 0), (a, e) => (a.X + e.X, a.Y + e.Y));
@@ -75,17 +85,20 @@ namespace PondSharp.Examples
             
             if (entities.Count > 10)
             {
+                ChangeColor(separatingColor);
                 // Move away from group center
                 (_forceX, _forceY) = GetForceDirection(X - groupCenterX, Y - groupCenterY);
                 _thinkCooldown = RndThinkDelay(entities.Count);
-            } else if (distanceToCenter > 2)
+            } else if (distanceToCenter > 5)
             {
+                ChangeColor(joiningColor);
                 // Move toward group center
                 (_forceX, _forceY) = GetForceDirection(groupCenterX - X, groupCenterY - Y);
-                _thinkCooldown = RndThinkDelay(20);
+                _thinkCooldown = RndThinkDelay(10);
             }
             else
             {
+                ChangeColor(baseColor);
                 (_forceX, _forceY) = (0, 0);
             }
         }

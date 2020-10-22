@@ -7,7 +7,7 @@ namespace PondSharp.Examples
     /// </summary>
     public class Chase : BaseEntity
     {
-        private static string MasterEntityId = string.Empty;
+        private static int? MasterEntityId = null;
         private static (int x, int y) MasterXy = (0, 0);
         
         private (int x, int y) _target = (0, 0);
@@ -17,7 +17,7 @@ namespace PondSharp.Examples
         public override void OnCreated()
         {
             ChangeViewDistance(5);
-            if (MasterEntityId != string.Empty) {
+            if (MasterEntityId != null) {
                 return;
             }
             ChangeColor(0xFF0000);
@@ -27,7 +27,7 @@ namespace PondSharp.Examples
 
         public override void OnDestroy()
         {
-            if (IsMaster) MasterEntityId = string.Empty;
+            if (IsMaster) MasterEntityId = null;
         }
 
         public override void Tick()

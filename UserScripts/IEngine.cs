@@ -10,19 +10,23 @@ namespace PondSharp.UserScripts
         int MaxX { get; }
         int MinY { get; }
         int MaxY { get; }
-        IEnumerable<IAbstractEntity> Entities { get; }
-        IAbstractEntity GetEntity(string entityId);
-        bool CanMoveTo(IAbstractEntity entity, int x, int y);
+        IEnumerable<IEntity> Entities { get; }
+        IEntity GetEntity(string entityId);
+        bool CanMoveTo(IEntity entity, int x, int y);
         bool MoveTo(string entityId, int x, int y);
-        bool MoveTo(IAbstractEntity entity, int x, int y);
-        bool CanChangeColorTo(IAbstractEntity entity, int color);
+        bool MoveTo(IEntity entity, int x, int y);
+        bool CanChangeColorTo(IEntity entity, int color);
         bool ChangeColorTo(string entityId, int color);
-        bool ChangeColorTo(IAbstractEntity entity, int color);
-        IEnumerable<IAbstractEntity> GetVisibleEntities(string entityId);
-        IEnumerable<IAbstractEntity> GetVisibleEntities(IAbstractEntity entity);
+        bool ChangeColorTo(IEntity entity, int color);
+        bool CanChangeViewDistance(IEntity entity, int distance);
+        bool ChangeViewDistance(string entityId, int distance);
+        bool ChangeViewDistance(IEntity entity, int distance);
+        IEnumerable<IEntity> GetVisibleEntities(string entityId);
+        IEnumerable<IEntity> GetVisibleEntities(IEntity entity);
         event EventHandler<(int, int)> EntityMoved;
-        event EventHandler<IAbstractEntity> EntityAdded;
+        event EventHandler<IEntity> EntityAdded;
         event EventHandler<int> EntityColorChanged;
+        event EventHandler<int> EntityViewDistanceChanged;
     }
 #pragma warning restore 1591
 }

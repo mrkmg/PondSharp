@@ -1,24 +1,34 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using PondSharp.UserScripts;
 
 namespace PondSharp.Examples
 {
+    /// <summary>
+    /// This is a pretty neat little entity
+    /// which will seek out other entities
+    /// and form groups, unless the area is
+    /// to dense, or it's too close to
+    /// another entity.
+    /// </summary>
     public class Clustering : BaseEntity
     {
-        const int baseColor = 0xFFFFFF;
-        const int joiningColor = 0x55FF55;
-        const int separatingColor = 0x5555FF;
-        const int fleeingColor = 0xFF5555;
-        private int _thinkCooldown;
+        private const int WanderingColor = 0xFFFFFF;  // White
+        private const int JoiningColor = 0x5555FF;    // Blue
+        private const int SeparatingColor = 0xFFFF55; // Yellow
+        private const int FleeingColor = 0xFF5555;    // Red
+        private const int RestingColor = 0x55FF55;    // Green
+
+        private int ThinkCooldown;
 
         private int RndThinkDelay(int max, int curve = 4, int divisors = 20) =>
             (int) (Math.Pow(_random.Next(divisors) + 1, curve) / Math.Pow(divisors, curve) * max); 
         
         public override void OnCreated()
         {
-            ChangeColor(baseColor);
+            ChangeViewDistance(30);
+            ChangeColor(WanderingColor);
             ChooseRandomDirection();
         }
         
@@ -31,14 +41,14 @@ namespace PondSharp.Examples
             // reverse if stuck
             _forceX = -_forceX;
             _forceY = -_forceY;
-            _thinkCooldown = 10;
+            ThinkCooldown = 10;
         }
 
         private void SetDirection()
         {
-            if (_thinkCooldown > 1)
+            if (ThinkCooldown > 1)
             {
-                _thinkCooldown--;
+                ThinkCooldown--;
                 return;
             }
 
@@ -49,56 +59,55 @@ namespace PondSharp.Examples
 
             if (_random.Next(100) != 0) return;
             
+            ChangeColor(WanderingColor);
             ChooseRandomDirection();
-            _thinkCooldown = _random.Next(100);
+            ThinkCooldown = RndThinkDelay(200, 5, 100);
         }
 
-        private bool CheckFlee(IList<IAbstractEntity> entities)
+        private bool CheckFlee(IList<IEntity> entities)
         {
-            if (!entities.Any()) return false;
+            if (!entities.Any(e => EntityDist(this, e) < 3)) 
+                return false;
             
             var closestEntity = entities
                 .OrderBy(e => EntityDist(this, e))
                 .First();
-            var closestDistance = EntityDist(this, closestEntity);
-
-            if (closestDistance > 3) return false;
             (_forceX, _forceY) = GetForceDirection(X - closestEntity.X, Y - closestEntity.Y);
             if (_forceX == 0 && _forceY == 0) ChooseRandomDirection();
-            _thinkCooldown = RndThinkDelay(30, 6);
-            ChangeColor(fleeingColor);
+            ThinkCooldown = RndThinkDelay(30, 6);
+            ChangeColor(FleeingColor);
             return true;
         }
 
-        private void ChooseForceDirections(IList<IAbstractEntity> entities)
+        private void ChooseForceDirections(IList<IEntity> entities)
         {
             if (entities.Count == 0) 
             {
-                ChangeColor(baseColor);
+                ChangeColor(WanderingColor);
                 return;
             }
             
             var (tx, ty) = entities
-                .Aggregate<IAbstractEntity, (int X, int Y)>((0, 0), (a, e) => (a.X + e.X, a.Y + e.Y));
+                .Aggregate<IEntity, (int X, int Y)>((0, 0), (a, e) => (a.X + e.X, a.Y + e.Y));
             var (groupCenterX, groupCenterY) = (tx / entities.Count, ty / entities.Count);
             var distanceToCenter = Dist(X, Y, groupCenterX, groupCenterY);
             
-            if (entities.Count > 10)
+            if (entities.Count > 15)
             {
-                ChangeColor(separatingColor);
+                ChangeColor(SeparatingColor);
                 // Move away from group center
                 (_forceX, _forceY) = GetForceDirection(X - groupCenterX, Y - groupCenterY);
-                _thinkCooldown = RndThinkDelay(entities.Count);
+                ThinkCooldown = RndThinkDelay(entities.Count);
             } else if (distanceToCenter > 5)
             {
-                ChangeColor(joiningColor);
+                ChangeColor(JoiningColor);
                 // Move toward group center
                 (_forceX, _forceY) = GetForceDirection(groupCenterX - X, groupCenterY - Y);
-                _thinkCooldown = RndThinkDelay(10);
+                ThinkCooldown = RndThinkDelay(10);
             }
             else
             {
-                ChangeColor(baseColor);
+                ChangeColor(RestingColor);
                 (_forceX, _forceY) = (0, 0);
             }
         }

@@ -6,10 +6,12 @@ namespace PondSharp.UserScripts
     /// <summary>
     /// Abstract entity class. All entities should extend this class to be properly loaded into the Pond.
     /// </summary>
-    public abstract class AbstractEntity : IAbstractEntity
+    public abstract class AbstractEntity : IEntity
     {
+
         /// <inheritdoc />
         public string Id { get; private set; }
+        
         private IEngine Engine { get; set; }
 
         /// <inheritdoc />
@@ -66,7 +68,13 @@ namespace PondSharp.UserScripts
         public bool ChangeColor(int color) => Engine.ChangeColorTo(this, color);
 
         /// <inheritdoc />
-        public IEnumerable<IAbstractEntity> VisibleEntities => Engine.GetVisibleEntities(this);
+        public bool CanChangeViewDistance(int distance) => Engine.CanChangeViewDistance(this, distance);
+
+        /// <inheritdoc />
+        public bool ChangeViewDistance(int distance) => Engine.ChangeViewDistance(this, distance);
+
+        /// <inheritdoc />
+        public IEnumerable<IEntity> VisibleEntities => Engine.GetVisibleEntities(this);
 
         /// <inheritdoc />
         public virtual void OnCreated() {}
@@ -76,5 +84,27 @@ namespace PondSharp.UserScripts
 
         /// <inheritdoc />
         public abstract void Tick();
+        
+        
+#pragma warning disable 1591
+        // ReSharper disable once MemberCanBePrivate.Global
+        protected bool Equals(AbstractEntity other)
+        {
+            return Id == other.Id;
+        }
+        
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((AbstractEntity) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return (Id != null ? Id.GetHashCode() : 0);
+        }
     }
+#pragma warning restore 1591
 }

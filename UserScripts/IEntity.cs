@@ -6,7 +6,7 @@ namespace PondSharp.UserScripts
     /// <summary>
     /// Base Entity Interface
     /// </summary>
-    public interface IAbstractEntity
+    public interface IEntity
     {
         /// <summary>
         /// UUID of the entity
@@ -57,7 +57,7 @@ namespace PondSharp.UserScripts
         /// Entities which are within the ViewDistance
         /// </summary>
         /// <see cref="ViewDistance"/>
-        IEnumerable<IAbstractEntity> VisibleEntities { get; }
+        IEnumerable<IEntity> VisibleEntities { get; }
         
         /// <summary>
         /// Not to be called except by the engine. Will likely fail.
@@ -94,6 +94,21 @@ namespace PondSharp.UserScripts
         /// <param name="color">Desired Color</param>
         /// <returns>If the entity's color was changed to the specified color.</returns>
         bool ChangeColor(int color);
+
+        /// <summary>
+        /// Checks if entity can changes its view distance to the specified distance.
+        /// </summary>
+        /// <param name="distance">Distance that visible entities will use.</param>
+        /// <returns>If the entity can change its view distance to the specified distance.</returns>
+        /// 
+        bool CanChangeViewDistance(int distance);
+        
+        /// <summary>
+        /// Tries to change the entity's view distance to the specified distance.
+        /// </summary>
+        /// <param name="distance">Distance that visible entities will use.</param>
+        /// <returns>If the entity's view distance was change the specified distance.</returns>
+        bool ChangeViewDistance(int distance);
         
         /// <summary>
         /// Called immediately after the Entity is created and loaded into the world.

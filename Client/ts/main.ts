@@ -13,3 +13,4 @@ win.createPond = async function (element: HTMLElement, width: number, height: nu
 win.createEditor = async function (elementId: string, globalName: string) {
     win[globalName] = new CodeEditor(elementId)
 }
+win.getSize = function () { return [win.innerWidth, win.innerHeight]; }

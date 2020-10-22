@@ -17,17 +17,22 @@ namespace PondSharp.Client
         {
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.RootComponents.Add<App>("app");
+            ConfigureServices(builder);
+            var host = builder.Build();
+            ConfigureProviders(host.Services);
+            await host.RunAsync().ConfigureAwait(false);
+        }
+
+        private static void ConfigureServices(WebAssemblyHostBuilder builder)
+        {
             builder.Services.AddBlazoredLocalStorage();
             builder.Services.AddScoped(sp => new HttpClient
             {
                 BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
             });
-            var host = builder.Build();
-            ConfigureProviders(host.Services);
-            await host.RunAsync().ConfigureAwait(false);
         }
-        
-        public static void ConfigureProviders(IServiceProvider services)
+
+        private static void ConfigureProviders(IServiceProvider services)
         {
             try
             {

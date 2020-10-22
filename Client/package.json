@@ -4,8 +4,8 @@
   "description": "PondSharp Client",
   "main": "index.js",
   "scripts": {
-    "build:dev": "webpack",
-    "build:release": "webpack -c ./webpack-release.config.js"
+    "build:debug": "webpack --env debug",
+    "build:release": "webpack --env release"
   },
   "author": "Kevin Gravier <kevin@mrkmg.com>",
   "license": "ISC",

@@ -5,6 +5,7 @@
     <RazorLangVersion>3.0</RazorLangVersion>
     <BlazorEnableCompression>false</BlazorEnableCompression>
     <AssemblyVersion>1.0.1</AssemblyVersion>
+    <BlazorWebAssemblyEnableLinking Condition="'$(Configuration)'!='Release'">false</BlazorWebAssemblyEnableLinking>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Examples\PondSharp.Examples.csproj" />
     <ProjectReference Include="..\Shared\PondSharp.Shared.csproj" />
     <ProjectReference Include="..\UserScripts\PondSharp.UserScripts.csproj" />
   </ItemGroup>
@@ -41,20 +43,20 @@
     <Folder Include="wwwroot\user-scripts" />
   </ItemGroup>
   
-  <Target Name="CopyExampleScripts" BeforeTargets="BeforeCompile">
+  <Target Name="CopyExampleScripts" BeforeTargets="PreBuildEvent">
     <Message Text="Copying Example Files" Importance="high" />
     <Copy SourceFiles="@(ExampleFiles)" DestinationFiles="@(ExampleFiles->'$(ProjectDir)\wwwroot\user-scripts\%(RecursiveDir)%(Filename)%(Extension).txt')" />
     <Copy SourceFiles="@(ExampleFiles)" DestinationFiles="@(ExampleFiles->'$(ProjectDir)\SampleProject\PondSharp.Examples\%(RecursiveDir)%(Filename)%(Extension)')" />
   </Target>
   
-  <Target Name="MakeSampleZip" BeforeTargets="BeforeCompile">
+  <Target Name="MakeSampleZip" BeforeTargets="Compile">
     <Message Text="Copying UserScripts DLL" Importance="high" />
     <Copy SourceFiles="$(SolutionDir)UserScripts\bin\$(Configuration)\netstandard2.1\PondSharp.UserScripts.dll;$(SolutionDir)UserScripts\bin\$(Configuration)\PondSharp.UserScripts.xml" DestinationFolder="SampleProject\PondSharp.Examples" />
     <Message Text="Creating Sample Project ZIP" Importance="high" />
     <ZipDirectory DestinationFile="wwwroot\sample-project.zip" SourceDirectory="SampleProject" Overwrite="true" />
   </Target>
   
-  <Target Name="BuildWebAssets" BeforeTargets="BeforeCompile" Condition="$(Configuration) == 'Release'">
+  <Target Name="BuildWebAssets" BeforeTargets="PreBuildEvent" Condition="$(Configuration) == 'Release'">
     <Message Text="Running NPM Build" Importance="high" />
     <Exec Command="npm run build:release" />
   </Target>

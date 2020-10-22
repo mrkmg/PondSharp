@@ -31,13 +31,13 @@ namespace PondSharp.Client.IDE
             _baseUri = baseUri;
         }
 
-        public void Compile(IEnumerable<(string path, string source)> sourceTexts)
+        public void Compile(Dictionary<string, string> sourceTexts)
         {
             var assemblyName = Path.GetRandomFileName();
             var options = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp8);
             
             var trees = sourceTexts.Select(st =>
-                CSharpSyntaxTree.ParseText(st.source, options, st.path));
+                CSharpSyntaxTree.ParseText(st.Value, options, st.Key));
             var compilation = CSharpCompilation.Create(
                 assemblyName,
                 trees,
@@ -69,8 +69,7 @@ namespace PondSharp.Client.IDE
 
         public IEnumerable<string> AvailableInstances(Type targetType)
         {
-            if (_assembly is null) 
-                throw new InvalidOperationException("No compiled assembly present");
+            if (_assembly is null) return new string[0];
 
             return _assembly.GetTypes()
                 .Where(t => t.IsClass)

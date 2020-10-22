@@ -59,7 +59,6 @@
 <div>PondSharp.UserScripts Version: <span>@UserScriptsVersion</span></div>
 
 @code {
-    
     private CSharpClassCompiler _compiler;
     private Dictionary<string, string> _sources = new Dictionary<string, string>();
     private string _selectedSource = string.Empty;
@@ -68,13 +67,12 @@
     private string _editorPromptName = string.Empty;
     private string _renameScriptOriginalName = string.Empty;
     private string _editorPromptError = string.Empty;
-
+    
     public Task TriggerSave() => SaveSource();
     public bool IsCompiled => _compiler?.HasAssembly ?? false;
     private IEnumerable<string> SourceNames => _sources.Keys.OrderBy(s => s);
-    private IEnumerable<(string path, string source)> Sources => _sources.Select(s => (s.Key, s.Value));
     private string UserScriptsVersion => Assembly
-        .GetAssembly(typeof(IAbstractEntity))
+        .GetAssembly(typeof(IEntity))
         .GetName().Version.ToString();
     
     private string FullEditorPromptName
@@ -93,7 +91,7 @@
         await ReadSources().ConfigureAwait(false);
     }
 
-    public IEnumerable<(string fullName, string name)> GetTypesOf(Type type) =>
+    public IEnumerable<(string fullName, string name)> GetTypeNamesOf(Type type) =>
         _compiler
             .AvailableInstances(type)
             .Select(t => (t, t.Split('.').Last()));
@@ -104,11 +102,12 @@
     public async Task Compile()
     {
         await SaveSource().ConfigureAwait(false);
-        _compiler.Compile(Sources);
+        _compiler.Compile(_sources);
     }
-    
-    protected override async Task OnInitializedAsync()
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (!firstRender) return;
         var types = new List<Type>
         {
             typeof(object),
@@ -117,12 +116,6 @@
             typeof(Enumerable)
         };
         _compiler = await CSharpClassCompiler.Make(types, Http.BaseAddress).ConfigureAwait(false);
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (!firstRender) return;
-        
         await CreateEditor().ConfigureAwait(false);
     }
     
@@ -236,7 +229,8 @@
             "Rand.cs",
             "Clustering.cs",
             "Simple.cs",
-            "Cooperative.cs"
+            "Chase.cs",
+            "Stated.cs"
         };
         _sources.Clear();
         foreach (var sourceFile in sourceFiles)

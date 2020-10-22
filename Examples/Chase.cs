@@ -2,7 +2,10 @@ using System.Linq;
 
 namespace PondSharp.Examples
 {
-    public class Cooperative : BaseEntity
+    /// <summary>
+    /// All entities follow one master entity.
+    /// </summary>
+    public class Chase : BaseEntity
     {
         private static string MasterEntityId = string.Empty;
         private static (int x, int y) MasterXy = (0, 0);
@@ -13,10 +16,10 @@ namespace PondSharp.Examples
         
         public override void OnCreated()
         {
+            ChangeViewDistance(5);
             if (MasterEntityId != string.Empty) {
                 return;
             }
-
             ChangeColor(0xFF0000);
             MasterEntityId = Id;
             _target = (X, Y);
@@ -62,18 +65,11 @@ namespace PondSharp.Examples
                 return;
             }
             
-
-            var entities = VisibleEntities.ToList();
-
-            if (!entities.Any()) return;
+            if (!VisibleEntities.Any()) return;
             
-            var closestEntity = entities
+            var closestEntity = VisibleEntities
                 .OrderBy(e => EntityDist(this, e))
                 .First();
-
-            var closestDistance = EntityDist(this, closestEntity);
-
-            if (closestDistance > 5) return;
 
             (_forceX, _forceY) = GetForceDirection(X - closestEntity.X, Y - closestEntity.Y);
             if (_forceX == 0 && _forceY == 0) ChooseRandomDirection();

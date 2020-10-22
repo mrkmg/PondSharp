@@ -4,6 +4,8 @@
 <div @ref="_pondHolder" style="width: @(Width * GridSize)px; height: @(Height * GridSize)px; padding: 0"></div>
 
 @code {
+    private const int QueueLength = 50;
+    
     [Parameter][Required]
     public int Width { get; set; }
     
@@ -13,17 +15,23 @@
     [Parameter][Required]
     public int GridSize { get; set; }
 
-    private string _id;
+    private string _id = string.Empty;
     private ElementReference _pondHolder;
     private string Method(string method) => $"ponds.{_id}.{method}";
     
-    private List<EntityChangeRequest> _pendingChangeRequests = new List<EntityChangeRequest>();
+    private int _lastChangeRequestIndex = 0;
+    private EntityChangeRequest[] _entityChangeRequests = new EntityChangeRequest[QueueLength];
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        _entityChangeRequests.Initialize();
         if (firstRender)
         {
             _id = await JsRuntime.InvokeAsync<string>("createPond", _pondHolder, Width, Height, GridSize);
+        }
+        else
+        {
+            await JsRuntime.InvokeVoidAsync(Method("resize"), Width, Height, GridSize);
         }
     }
     
@@ -37,19 +45,21 @@
         JsRuntime.InvokeVoidAsync(Method("moveEntity"), entityId, x, y);
 
     public void QueueMoveEntity(string entityId, int x, int y) =>
-        _pendingChangeRequests.Add(new EntityChangeRequest
-        {
-            EntityId = entityId,
-            X = x,
-            Y = y
-        });
+        QueueChangeRequest(entityId, x, y);
 
     public void QueueChangeEntityColor(string entityId, int color) =>
-        _pendingChangeRequests.Add(new EntityChangeRequest
-        {
-            EntityId = entityId,
-            Color = color
-        });
+        QueueChangeRequest(entityId, color: color);
+
+    private void QueueChangeRequest(string entityId, int? x = null, int? y = null, int? color = null)
+    {
+        _lastChangeRequestIndex++;
+        _entityChangeRequests[_lastChangeRequestIndex].EntityId = entityId;
+        _entityChangeRequests[_lastChangeRequestIndex].X = x;
+        _entityChangeRequests[_lastChangeRequestIndex].Y = y;
+        _entityChangeRequests[_lastChangeRequestIndex].Color = color;
+        if (_lastChangeRequestIndex == QueueLength - 1) 
+            FlushChangeQueue();
+    }
 
     public ValueTask Start() =>
         JsRuntime.InvokeVoidAsync(Method("start"));
@@ -57,18 +67,20 @@
     public ValueTask Stop() =>
         JsRuntime.InvokeVoidAsync(Method("stop"));
 
+    public void ClearChangeQueue() => _lastChangeRequestIndex = -1;
+
     public void FlushChangeQueue()
     {
-        if (_pendingChangeRequests.Count == 0) return;
+        if (_lastChangeRequestIndex == -1) return;
         try
         {
-            ((IJSInProcessRuntime)JsRuntime).InvokeVoid(Method("processEntityChangeRequests"), _pendingChangeRequests);
+            ((IJSInProcessRuntime)JsRuntime).InvokeVoid(Method("processEntityChangeRequests"), _entityChangeRequests.Segment(0, _lastChangeRequestIndex + 1));
         }
         catch (Exception e)
         {
             Console.WriteLine(e.Message);
         }
-        _pendingChangeRequests.Clear();
+        _lastChangeRequestIndex = -1;
     }
         
         
@@ -80,7 +92,7 @@
         public int y { get; set; }
     }
 
-    public struct EntityChangeRequest
+    private struct EntityChangeRequest
     {
         public string EntityId { get; set; }
         public int? X { get; set; }
@@ -89,5 +101,7 @@
     }
 #pragma warning restore 649
     // ReSharper restore InconsistentNaming ClassNeverInstantiated.Local UnusedAutoPropertyAccessor.Global ClassNeverInstantiated.Global
+
+    
 
 }

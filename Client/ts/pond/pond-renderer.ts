@@ -4,30 +4,53 @@ export class PondRenderer {
     private element: HTMLDivElement;
     private application: PIXI.Application;
     private entities: Record<string, PIXI.Container> = {};
-    private readonly fps: PIXI.Text;
-    private readonly gridSize: number;
+    private fps: PIXI.Text;
+    private gridSize: number;
+    private width: number;
+    private height: number;
     
     public constructor(element: HTMLElement, width: number, height: number, gridSize: number) {
-        this.gridSize = gridSize;
         this.element = element as HTMLDivElement;
+        this.width = width;
+        this.height = height;
+        this.gridSize = gridSize;
+        this.init();
+    }
+    
+    public start = () => this.application.start();
+    public stop = () => this.application.stop();
+    
+    public resize(width: number, height: number, gridSize: number) {
+        this.width = width;
+        this.height = height;
+        this.gridSize = gridSize;
+        this.gridSize = gridSize;
+        this.init();
+    }
+    
+    private init() {
+        if (this.application) {
+            console.debug("Removing PIXI instance");
+            this.application.destroy(true, {children: true, texture: true, baseTexture: true});
+            this.element.removeChild(this.element.children.item(0));
+            this.application = null;
+        }
+        console.debug("Creating PIXI instance");
         // noinspection JSSuspiciousNameCombination
         this.application = new PIXI.Application({
-            width: width * gridSize,
-            height: width * gridSize
+            width: this.width * this.gridSize,
+            height: this.height * this.gridSize
         });
         this.element.appendChild(this.application.view);
         this.application.stage.x = this.application.view.width / 2;
         this.application.stage.y = this.application.view.height / 2;
         this.application.ticker.add(() => this.onTick());
-        
+
         this.fps = new PIXI.Text("FPS: ??", {fill: 0xAAFFAA, fontSize: 8});
         this.fps.x = -this.application.view.width/2;
         this.fps.y = -this.application.view.height/2;
         this.application.stage.addChild(this.fps);
     }
-    
-    public start = () => this.application.start();
-    public stop = () => this.application.stop();
     
     public createEntity(id: string, x: number, y: number, color: number) {
         const graphic = new PIXI.Graphics();

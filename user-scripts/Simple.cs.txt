@@ -2,6 +2,9 @@ using System;
 
 namespace PondSharp.Examples
 {
+    /// <summary>
+    /// The simplest example of an entity.
+    /// </summary>
     public class Simple : BaseEntity
     {
         public override void OnCreated()

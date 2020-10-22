@@ -1,5 +1,8 @@
 namespace PondSharp.Examples
 {
+    /// <summary>
+    /// This entity moves randomly.
+    /// </summary>
     public class Rand : BaseEntity
     {
         public override void OnCreated()

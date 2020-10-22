@@ -2,7 +2,10 @@ using System.Linq;
 
 namespace PondSharp.Examples
 {
-    public class Cooperative : BaseEntity
+    /// <summary>
+    /// All entities follow one master entity.
+    /// </summary>
+    public class Chase : BaseEntity
     {
         private static string MasterEntityId = string.Empty;
         private static (int x, int y) MasterXy = (0, 0);

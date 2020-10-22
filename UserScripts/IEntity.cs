@@ -9,9 +9,9 @@ namespace PondSharp.UserScripts
     public interface IEntity
     {
         /// <summary>
-        /// UUID of the entity
+        /// Id of the entity
         /// </summary>
-        string Id { get; }
+        int Id { get; }
         
         /// <summary>
         /// Current World X Position
@@ -63,7 +63,7 @@ namespace PondSharp.UserScripts
         /// Not to be called except by the engine. Will likely fail.
         /// <exception cref="AlreadyInitializedException">Entity was already initialized.</exception>
         /// </summary>
-        void Initialize(string id, IEngine engine, int x = 0, int y = 0, int color = 0xFFFFFF, int viewDistance = 0);
+        void Initialize(int id, IEngine engine, int x = 0, int y = 0, int color = 0xFFFFFF, int viewDistance = 0);
         
         /// <summary>
         /// Checks if the entity can move to a World Position

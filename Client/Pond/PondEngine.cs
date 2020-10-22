@@ -34,10 +34,10 @@ namespace PondSharp.Client.Pond
 
 
         private Dictionary<int, HashSet<IEntity>> _entitiesByBlock = new Dictionary<int, HashSet<IEntity>>();
-        private Dictionary<string, IEntity> _entitiesById = new Dictionary<string, IEntity>();
+        private Dictionary<int, IEntity> _entitiesById = new Dictionary<int, IEntity>();
         
         public override IEnumerable<IEntity> Entities => _entitiesById.Values;
-        public override IEntity GetEntity(string entityId) => _entitiesById[entityId];
+        public override IEntity GetEntity(int entityId) => _entitiesById[entityId];
 
         private static int EntityDist(IEntity e1, IEntity e2) =>
             Dist(e1.X, e1.Y, e2.X, e2.Y);
@@ -92,7 +92,7 @@ namespace PondSharp.Client.Pond
         public override IEnumerable<IEntity> GetVisibleEntities(IEntity entity) =>
             GetEntitiesAround(entity.X, entity.Y, entity.ViewDistance).Where(e => e.Id != entity.Id);
         
-        public bool RemoveEntity(string entityId)
+        public bool RemoveEntity(int entityId)
         {
             var entity = _entitiesById[entityId];
             entity.OnDestroy();

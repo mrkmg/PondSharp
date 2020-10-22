@@ -12,15 +12,15 @@ namespace PondSharp.UserScripts
         public int MaxY { get; protected set; }
         
         public abstract IEnumerable<IEntity> Entities { get; }
-        public abstract IEntity GetEntity(string entityId);
+        public abstract IEntity GetEntity(int entityId);
 
-        public IEnumerable<IEntity> GetVisibleEntities(string entityId) => GetVisibleEntities(GetEntity(entityId));
+        public IEnumerable<IEntity> GetVisibleEntities(int entityId) => GetVisibleEntities(GetEntity(entityId));
         public abstract IEnumerable<IEntity> GetVisibleEntities(IEntity entity);
 
         #region Movement
         
         public virtual bool CanMoveTo(IEntity entity, int x, int y) => true;
-        public bool MoveTo(string entityId, int x, int y) => MoveTo(GetEntity(entityId), x, y);
+        public bool MoveTo(int entityId, int x, int y) => MoveTo(GetEntity(entityId), x, y);
         public virtual bool MoveTo(IEntity entity, int x, int y)
         {
             if (!CanMoveTo(entity, x, y)) return false;
@@ -40,7 +40,7 @@ namespace PondSharp.UserScripts
         #region Color
 
         public virtual bool CanChangeColorTo(IEntity entity, int color) => true;
-        public bool ChangeColorTo(string entityId, int color) => ChangeColorTo(GetEntity(entityId), color);
+        public bool ChangeColorTo(int entityId, int color) => ChangeColorTo(GetEntity(entityId), color);
         public virtual bool ChangeColorTo(IEntity entity, int color)
         {
             if (!CanChangeColorTo(entity, color)) return false;
@@ -61,7 +61,7 @@ namespace PondSharp.UserScripts
 
 
         public virtual bool CanChangeViewDistance(IEntity entity, int distance) => true;
-        public bool ChangeViewDistance(string entityId, int distance) => ChangeViewDistance(GetEntity(entityId), distance);
+        public bool ChangeViewDistance(int entityId, int distance) => ChangeViewDistance(GetEntity(entityId), distance);
         public bool ChangeViewDistance(IEntity entity, int distance)
         {
             if (!CanChangeViewDistance(entity, distance)) return false;

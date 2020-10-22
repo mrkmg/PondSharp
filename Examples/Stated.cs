@@ -32,7 +32,7 @@ namespace PondSharp.Examples
 
         public override void OnCreated()
         {
-            if (States.Count == 0 || States.Any(s => !s.IsFull))
+            if (States.Count == 0 || !States.Any(s => !s.IsFull))
             {
                 MyState = new State {Leader = this};
                 States.Add(MyState);
@@ -70,6 +70,8 @@ namespace PondSharp.Examples
             
             if (MyState.Leader.Id == Id) MyState.Tick();
 
+            if (X == DestinationX && Y == DestinationY) return;
+
             var (x, y) = (DestinationX - X, DestinationY - Y);
             var dM = Math.Max(Math.Abs(x), Math.Abs(y));
             (x, y) = dM == 0 ? (0, 0) : ((int)Math.Round((double)x / dM), (int)Math.Round((double)y / dM));
@@ -89,8 +91,8 @@ namespace PondSharp.Examples
             public List<Stated> Followers { get; } = new List<Stated>();
             public readonly int StateColor = System.Drawing.Color.FromArgb(Random.Next(0x77) + 0x88, Random.Next(0x77) + 0x88, Random.Next(0x77) + 0x88).ToArgb();
             public bool IsFull => Followers.Count >= 20;
-
             private CurrentStateType CurrentState { get; set; } = CurrentStateType.Pending;
+            private int Cooldown = 0;
 
             private bool DestinationsFulfilled =>
                 !(Leader?.DestinationX != Leader?.X || Leader?.DestinationY != Leader?.Y ||
@@ -102,15 +104,15 @@ namespace PondSharp.Examples
                 {
                     case CurrentStateType.Pending:
                     {
-                        Leader.DestinationX = Random.Next(Leader.WorldMinX / 2, Leader.WorldMaxX / 2);
-                        Leader.DestinationY = Random.Next(Leader.WorldMinY / 2, Leader.WorldMaxY / 2);
+                        Leader.DestinationX = Random.Next(Leader.WorldMinX + 20, Leader.WorldMaxX - 20);
+                        Leader.DestinationY = Random.Next(Leader.WorldMinY + 20, Leader.WorldMaxY - 20);
 
                         foreach (var follower in Followers)
                         {
                             (follower.DestinationX, follower.DestinationY) = RandomPointOnCircle(
                                 Leader.DestinationX, 
                                 Leader.DestinationY, 
-                                15 //Random.Next(4) * 10
+                                15
                             );
                         }
 
@@ -119,21 +121,28 @@ namespace PondSharp.Examples
                     }
                     case CurrentStateType.Joining:
                         if (DestinationsFulfilled)
+                        {
                             CurrentState = CurrentStateType.Waiting;
+                            Cooldown = Random.Next(160) + 60;
+                        }
+                            
                         break;
                     case CurrentStateType.Waiting:
-                        if (Random.Next(30) == 0)
+                        if (Cooldown > 0)
                         {
-                            Leader.DestinationX = Random.Next(Leader.WorldMinX, Leader.WorldMaxX);
-                            Leader.DestinationY = Random.Next(Leader.WorldMinY, Leader.WorldMaxY);
-                            foreach (var follower in Followers)
-                            {
-                                follower.DestinationX = Random.Next(Leader.WorldMinX, Leader.WorldMaxX);
-                                follower.DestinationY = Random.Next(Leader.WorldMinY, Leader.WorldMaxY);
-                            }
-
-                            CurrentState = CurrentStateType.Separating;
+                            Cooldown--;
+                            return;
                         }
+                        
+                        Leader.DestinationX = Random.Next(Leader.WorldMinX, Leader.WorldMaxX);
+                        Leader.DestinationY = Random.Next(Leader.WorldMinY, Leader.WorldMaxY);
+                        foreach (var follower in Followers)
+                        {
+                            follower.DestinationX = Random.Next(Leader.WorldMinX, Leader.WorldMaxX);
+                            follower.DestinationY = Random.Next(Leader.WorldMinY, Leader.WorldMaxY);
+                        }
+
+                        CurrentState = CurrentStateType.Separating;
                         break;
                     case CurrentStateType.Separating:
                         if (DestinationsFulfilled)

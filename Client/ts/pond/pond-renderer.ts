@@ -1,9 +1,11 @@
 import * as PIXI from "pixi.js";
 
+const win: typeof window & {Blazor: any} = window as any;
+
 export class PondRenderer {
     private element: HTMLDivElement;
     private application: PIXI.Application;
-    private entities: Record<string, PIXI.Container> = {};
+    private entities: Record<number, PIXI.Container> = {};
     private fps: PIXI.Text;
     private gridSize: number;
     private width: number;
@@ -52,7 +54,7 @@ export class PondRenderer {
         this.application.stage.addChild(this.fps);
     }
     
-    public createEntity(id: string, x: number, y: number, color: number) {
+    public createEntity(id: number, x: number, y: number, color: number) {
         const graphic = new PIXI.Graphics();
         graphic.beginFill(color);
         graphic.drawRect(0, 0, this.gridSize, this.gridSize);
@@ -63,19 +65,19 @@ export class PondRenderer {
         this.application.stage.addChild(graphic);
     }
     
-    public destroyEntity(id: string) {
+    public destroyEntity(id: number) {
         this.entities[id].destroy();
         this.entities[id] = null;
         delete this.entities[id];
     }
     
-    public moveEntity(id: string, x: number, y: number) {
+    public moveEntity(id: number, x: number, y: number) {
         const container = this.entities[id];
         container.position.x = x * this.gridSize;
         container.position.y = y * this.gridSize;
     }
     
-    public changeEntityColor(id: string, color: number) {
+    public changeEntityColor(id: number, color: number) {
         const graphic = this.entities[id] as PIXI.Graphics;
         graphic.clear();
         graphic.beginFill(color);
@@ -83,26 +85,23 @@ export class PondRenderer {
         graphic.endFill();
     }
     
-    public processEntityChangeRequests(requests: EntityChangeRequest[]) {
-        for (const request of requests) {
-            if (request.X !== null && request.Y !== null) {
-                this.moveEntity(request.EntityId, request.X, request.Y);
-            }
-            if (request.Color != null) {
-                this.changeEntityColor(request.EntityId, request.Color);
-            }
+    public processEntityChangeRequestsRaw(pointer: any) {        
+        const length = win.Blazor.platform.getArrayLength(pointer);
+        for (let i = 0; i < length; i++) {
+            const entryPtr = win.Blazor.platform.getArrayEntryPtr(pointer, i, 16);
+            const id = win.Blazor.platform.readInt32Field(entryPtr, 0);
+            const x = win.Blazor.platform.readInt32Field(entryPtr, 4);
+            const y = win.Blazor.platform.readInt32Field(entryPtr, 8);
+            const color = win.Blazor.platform.readInt32Field(entryPtr, 12);
+            if (x != -2147483648 && y != -2147483648)
+                this.moveEntity(id, x, y);
+            if (color != -2147483648)
+                this.changeEntityColor(id, color);
         }
+        return true;
     }
     
     private onTick() {
         this.fps.text = `FPS: ${Math.round(PIXI.Ticker.shared.FPS)}`;
     }
 }
-
-interface EntityChangeRequest {
-    EntityId: string;
-    X?: number;
-    Y?: number;
-    Color?: number;
-}
-

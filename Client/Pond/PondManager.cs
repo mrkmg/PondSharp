@@ -15,6 +15,8 @@ namespace PondSharp.Client.Pond
         private readonly Timer _tickTimer;
         private DateTime _lastTime = DateTime.Now;
         private Random _random = new Random();
+        private int _nextId = 0;
+        
         public double CurrentTickTime = 1;
         public double CurrentUpdatesPerTick = 1;
         public bool IsRunning => _tickTimer.Enabled;
@@ -87,7 +89,7 @@ namespace PondSharp.Client.Pond
         {
             int ColorRnd(int min) => _random.Next(min) + (0xFF - min);
             entity.Initialize(
-                Guid.NewGuid().ToString(),
+                _nextId++,
                 PondEngine,
                 _random.Next(-PondCanvas.Width/2, PondCanvas.Width/2-1), 
                 _random.Next(-PondCanvas.Height/2, PondCanvas.Height/2-1),

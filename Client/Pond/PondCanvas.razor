@@ -1,10 +1,13 @@
 @using System.ComponentModel.DataAnnotations
+@using System.Reflection
+@using System.Runtime.InteropServices
 @inject IJSRuntime JsRuntime;
 
 <div @ref="_pondHolder" style="width: @(Width * GridSize)px; height: @(Height * GridSize)px; padding: 0"></div>
 
 @code {
-    private const int QueueLength = 50;
+    
+    private const int QueueLength = 1000;
     
     [Parameter][Required]
     public int Width { get; set; }
@@ -19,7 +22,7 @@
     private ElementReference _pondHolder;
     private string Method(string method) => $"ponds.{_id}.{method}";
     
-    private int _lastChangeRequestIndex = 0;
+    private int _lastChangeRequestIndex = -1;
     private EntityChangeRequest[] _entityChangeRequests = new EntityChangeRequest[QueueLength];
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -35,28 +38,28 @@
         }
     }
     
-    public ValueTask CreateEntity(string entityId, int x, int y, int color) => 
+    public ValueTask CreateEntity(int entityId, int x, int y, int color) => 
         JsRuntime.InvokeVoidAsync(Method("createEntity"), entityId, x, y, color);
 
-    public ValueTask DestroyEntity(string entityId) =>
+    public ValueTask DestroyEntity(int entityId) =>
         JsRuntime.InvokeVoidAsync(Method("destroyEntity"), entityId);
 
-    public ValueTask MoveEntity(string entityId, int x, int y) =>
+    public ValueTask MoveEntity(int entityId, int x, int y) =>
         JsRuntime.InvokeVoidAsync(Method("moveEntity"), entityId, x, y);
 
-    public void QueueMoveEntity(string entityId, int x, int y) =>
+    public void QueueMoveEntity(int entityId, int x, int y) =>
         QueueChangeRequest(entityId, x, y);
 
-    public void QueueChangeEntityColor(string entityId, int color) =>
+    public void QueueChangeEntityColor(int entityId, int color) =>
         QueueChangeRequest(entityId, color: color);
 
-    private void QueueChangeRequest(string entityId, int? x = null, int? y = null, int? color = null)
+    private void QueueChangeRequest(int entityId, int? x = null, int? y = null, int? color = null)
     {
         _lastChangeRequestIndex++;
         _entityChangeRequests[_lastChangeRequestIndex].EntityId = entityId;
-        _entityChangeRequests[_lastChangeRequestIndex].X = x;
-        _entityChangeRequests[_lastChangeRequestIndex].Y = y;
-        _entityChangeRequests[_lastChangeRequestIndex].Color = color;
+        _entityChangeRequests[_lastChangeRequestIndex].X = x ?? int.MinValue;
+        _entityChangeRequests[_lastChangeRequestIndex].Y = y ?? int.MinValue;
+        _entityChangeRequests[_lastChangeRequestIndex].Color = color ?? int.MinValue;
         if (_lastChangeRequestIndex == QueueLength - 1) 
             FlushChangeQueue();
     }
@@ -68,18 +71,14 @@
         JsRuntime.InvokeVoidAsync(Method("stop"));
 
     public void ClearChangeQueue() => _lastChangeRequestIndex = -1;
-
+    
     public void FlushChangeQueue()
     {
         if (_lastChangeRequestIndex == -1) return;
-        try
-        {
-            ((IJSInProcessRuntime)JsRuntime).InvokeVoid(Method("processEntityChangeRequests"), _entityChangeRequests.Segment(0, _lastChangeRequestIndex + 1));
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e.Message);
-        }
+        var runtime = (Microsoft.JSInterop.WebAssembly.WebAssemblyJSRuntime) JsRuntime;
+        var changeRequests = _entityChangeRequests.AsSpan(0, _lastChangeRequestIndex + 1).ToArray();
+        runtime.InvokeUnmarshalled<EntityChangeRequest[], bool>(Method("processEntityChangeRequestsRaw"), changeRequests);
+        
         _lastChangeRequestIndex = -1;
     }
         
@@ -92,12 +91,33 @@
         public int y { get; set; }
     }
 
+    private enum EntityChangeRequestType
+    {
+        Position = 1,
+        Color = 2,
+    }
+
+    [StructLayout(LayoutKind.Explicit, Pack = 8, Size = 16)]
     private struct EntityChangeRequest
     {
-        public string EntityId { get; set; }
-        public int? X { get; set; }
-        public int? Y { get; set; }
-        public int? Color { get; set; }
+        [FieldOffset(0)] public int EntityId;
+        [FieldOffset(4)] public int X;
+        [FieldOffset(8)] public int Y;
+        [FieldOffset(12)] public int Color;
+    }
+
+    [StructLayout(LayoutKind.Explicit, Pack = 8)]
+    private struct EntityChangeRequests
+    {
+        [FieldOffset(0)] public int Count;
+        [FieldOffset(4)] public EntityChangeRequest[] Requests;
+
+        public EntityChangeRequests(EntityChangeRequest[] changeRequests)
+        {
+            Count = changeRequests.Length;
+            Requests = changeRequests;
+            foreach (var request in Requests) Console.WriteLine($"ECR:  {request.EntityId}, {request.X} {request.Y} {request.Color}");
+        }
     }
 #pragma warning restore 649
     // ReSharper restore InconsistentNaming ClassNeverInstantiated.Local UnusedAutoPropertyAccessor.Global ClassNeverInstantiated.Global

@@ -10,7 +10,7 @@ namespace PondSharp.UserScripts
     {
 
         /// <inheritdoc />
-        public string Id { get; private set; }
+        public int Id { get; private set; }
         
         private IEngine Engine { get; set; }
 
@@ -41,7 +41,7 @@ namespace PondSharp.UserScripts
         private bool _intialized;
 
         /// <inheritdoc />
-        public virtual void Initialize(string id, IEngine engine, int x = 0, int y = 0, int color = 0xFFFFFF, int viewDistance = 0)
+        public virtual void Initialize(int id, IEngine engine, int x = 0, int y = 0, int color = 0xFFFFFF, int viewDistance = 0)
         {
             if (_intialized) throw new AlreadyInitializedException();
             Id = id;

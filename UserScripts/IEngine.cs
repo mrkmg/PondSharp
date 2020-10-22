@@ -11,17 +11,17 @@ namespace PondSharp.UserScripts
         int MinY { get; }
         int MaxY { get; }
         IEnumerable<IEntity> Entities { get; }
-        IEntity GetEntity(string entityId);
+        IEntity GetEntity(int entityId);
         bool CanMoveTo(IEntity entity, int x, int y);
-        bool MoveTo(string entityId, int x, int y);
+        bool MoveTo(int entityId, int x, int y);
         bool MoveTo(IEntity entity, int x, int y);
         bool CanChangeColorTo(IEntity entity, int color);
-        bool ChangeColorTo(string entityId, int color);
+        bool ChangeColorTo(int entityId, int color);
         bool ChangeColorTo(IEntity entity, int color);
         bool CanChangeViewDistance(IEntity entity, int distance);
-        bool ChangeViewDistance(string entityId, int distance);
+        bool ChangeViewDistance(int entityId, int distance);
         bool ChangeViewDistance(IEntity entity, int distance);
-        IEnumerable<IEntity> GetVisibleEntities(string entityId);
+        IEnumerable<IEntity> GetVisibleEntities(int entityId);
         IEnumerable<IEntity> GetVisibleEntities(IEntity entity);
         event EventHandler<(int, int)> EntityMoved;
         event EventHandler<IEntity> EntityAdded;

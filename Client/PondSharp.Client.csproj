@@ -6,6 +6,7 @@
     <BlazorEnableCompression>false</BlazorEnableCompression>
     <AssemblyVersion>1.0.1</AssemblyVersion>
     <BlazorWebAssemblyEnableLinking Condition="'$(Configuration)'!='Release'">false</BlazorWebAssemblyEnableLinking>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>

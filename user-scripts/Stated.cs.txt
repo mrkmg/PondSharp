@@ -32,7 +32,7 @@ namespace PondSharp.Examples
 
         public override void OnCreated()
         {
-            if (States.Count == 0 || States.Any(s => !s.IsFull))
+            if (States.Count == 0 || !States.Any(s => !s.IsFull))
             {
                 MyState = new State {Leader = this};
                 States.Add(MyState);

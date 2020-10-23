@@ -51,8 +51,6 @@ namespace PondSharp.UserScripts
             Color = color;
             _intialized = true;
             ViewDistance = viewDistance;
-            
-            OnCreated();
         }
 
         /// <inheritdoc />

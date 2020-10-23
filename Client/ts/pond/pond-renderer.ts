@@ -90,13 +90,20 @@ export class PondRenderer {
         for (let i = 0; i < length; i++) {
             const entryPtr = win.Blazor.platform.getArrayEntryPtr(pointer, i, 16);
             const id = win.Blazor.platform.readInt32Field(entryPtr, 0);
-            const x = win.Blazor.platform.readInt32Field(entryPtr, 4);
-            const y = win.Blazor.platform.readInt32Field(entryPtr, 8);
-            const color = win.Blazor.platform.readInt32Field(entryPtr, 12);
-            if (x != -2147483648 && y != -2147483648)
-                this.moveEntity(id, x, y);
-            if (color != -2147483648)
-                this.changeEntityColor(id, color);
+            const type = win.Blazor.platform.readInt32Field(entryPtr, 4);
+            switch (type) {
+                case 1:
+                    const x = win.Blazor.platform.readInt32Field(entryPtr, 8);
+                    const y = win.Blazor.platform.readInt32Field(entryPtr, 12);
+                    this.moveEntity(id, x, y);
+                    break;
+                case 2:
+                    const color = win.Blazor.platform.readInt32Field(entryPtr, 8);
+                    this.changeEntityColor(id, color);
+                    break;
+                default:
+                    throw new Error("unknown type");
+            }
         }
         return true;
     }

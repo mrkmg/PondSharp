@@ -6,8 +6,9 @@
 <div @ref="_pondHolder" style="width: @(Width * GridSize)px; height: @(Height * GridSize)px; padding: 0"></div>
 
 @code {
-    
-    private const int QueueLength = 1000;
+    private const int QueueLength = 5000;
+
+    private IJSInProcessRuntime Js => (IJSInProcessRuntime) JsRuntime;
     
     [Parameter][Required]
     public int Width { get; set; }
@@ -27,7 +28,6 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        _entityChangeRequests.Initialize();
         if (firstRender)
         {
             _id = await JsRuntime.InvokeAsync<string>("createPond", _pondHolder, Width, Height, GridSize);
@@ -38,29 +38,33 @@
         }
     }
     
-    public ValueTask CreateEntity(int entityId, int x, int y, int color) => 
-        JsRuntime.InvokeVoidAsync(Method("createEntity"), entityId, x, y, color);
+    public void CreateEntity(int entityId, int x, int y, int color) => 
+        Js.InvokeVoid(Method("createEntity"), entityId, x, y, color);
 
-    public ValueTask DestroyEntity(int entityId) =>
-        JsRuntime.InvokeVoidAsync(Method("destroyEntity"), entityId);
+    public void DestroyEntity(int entityId) =>
+        Js.InvokeVoid(Method("destroyEntity"), entityId);
 
-    public ValueTask MoveEntity(int entityId, int x, int y) =>
-        JsRuntime.InvokeVoidAsync(Method("moveEntity"), entityId, x, y);
+    public void MoveEntity(int entityId, int x, int y) =>
+        Js.InvokeVoid(Method("moveEntity"), entityId, x, y);
 
-    public void QueueMoveEntity(int entityId, int x, int y) =>
-        QueueChangeRequest(entityId, x, y);
-
-    public void QueueChangeEntityColor(int entityId, int color) =>
-        QueueChangeRequest(entityId, color: color);
-
-    private void QueueChangeRequest(int entityId, int? x = null, int? y = null, int? color = null)
+    public void QueueMoveEntity(int entityId, int x, int y)
     {
         _lastChangeRequestIndex++;
         _entityChangeRequests[_lastChangeRequestIndex].EntityId = entityId;
-        _entityChangeRequests[_lastChangeRequestIndex].X = x ?? int.MinValue;
-        _entityChangeRequests[_lastChangeRequestIndex].Y = y ?? int.MinValue;
-        _entityChangeRequests[_lastChangeRequestIndex].Color = color ?? int.MinValue;
-        if (_lastChangeRequestIndex == QueueLength - 1) 
+        _entityChangeRequests[_lastChangeRequestIndex].Type = EntityChangeRequestType.Position;
+        _entityChangeRequests[_lastChangeRequestIndex].X = x;
+        _entityChangeRequests[_lastChangeRequestIndex].Y = y;
+        if (_lastChangeRequestIndex == QueueLength - 1)
+            FlushChangeQueue();
+    }
+
+    public void QueueChangeEntityColor(int entityId, int color)
+    {
+        _lastChangeRequestIndex++;
+        _entityChangeRequests[_lastChangeRequestIndex].EntityId = entityId;
+        _entityChangeRequests[_lastChangeRequestIndex].Type = EntityChangeRequestType.Color;
+        _entityChangeRequests[_lastChangeRequestIndex].Color = color;
+        if (_lastChangeRequestIndex == QueueLength - 1)
             FlushChangeQueue();
     }
 
@@ -81,47 +85,22 @@
         
         _lastChangeRequestIndex = -1;
     }
-        
-        
-    // ReSharper disable InconsistentNaming ClassNeverInstantiated.Local UnusedAutoPropertyAccessor.Global ClassNeverInstantiated.Global
-#pragma warning disable 649
-    public struct XY
-    {
-        public int x { get; set; }
-        public int y { get; set; }
-    }
-
+    
     private enum EntityChangeRequestType
     {
         Position = 1,
         Color = 2,
     }
-
-    [StructLayout(LayoutKind.Explicit, Pack = 8, Size = 16)]
+    
+    [StructLayout(LayoutKind.Explicit, Pack = 16, Size = 16)]
     private struct EntityChangeRequest
     {
         [FieldOffset(0)] public int EntityId;
-        [FieldOffset(4)] public int X;
-        [FieldOffset(8)] public int Y;
-        [FieldOffset(12)] public int Color;
+        [FieldOffset(4)] public EntityChangeRequestType Type;
+        
+        [FieldOffset(8)] public int X;
+        [FieldOffset(12)] public int Y;
+        
+        [FieldOffset(8)] public int Color;
     }
-
-    [StructLayout(LayoutKind.Explicit, Pack = 8)]
-    private struct EntityChangeRequests
-    {
-        [FieldOffset(0)] public int Count;
-        [FieldOffset(4)] public EntityChangeRequest[] Requests;
-
-        public EntityChangeRequests(EntityChangeRequest[] changeRequests)
-        {
-            Count = changeRequests.Length;
-            Requests = changeRequests;
-            foreach (var request in Requests) Console.WriteLine($"ECR:  {request.EntityId}, {request.X} {request.Y} {request.Color}");
-        }
-    }
-#pragma warning restore 649
-    // ReSharper restore InconsistentNaming ClassNeverInstantiated.Local UnusedAutoPropertyAccessor.Global ClassNeverInstantiated.Global
-
-    
-
 }

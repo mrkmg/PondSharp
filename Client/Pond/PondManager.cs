@@ -14,16 +14,15 @@ namespace PondSharp.Client.Pond
         
         private readonly Timer _tickTimer;
         private DateTime _lastTime = DateTime.Now;
-        private Random _random = new Random();
+        private readonly Random _random = new Random();
         private int _nextId = 0;
         
         public double CurrentTickTime = 1;
-        public double CurrentUpdatesPerTick = 1;
         public bool IsRunning => _tickTimer.Enabled;
 
         public PondManager([NotNull] PondEngine engine, [NotNull] PondCanvas canvas)
         {
-            _tickTimer = new Timer(1000 / 60); // 20 tps
+            _tickTimer = new Timer(16); // 60 tps (1000/60)
             _tickTimer.Elapsed += (sender, args) => Tick();
             
             PondCanvas = canvas;
@@ -57,6 +56,7 @@ namespace PondSharp.Client.Pond
         private void EngineOnEntityAdded(object sender, IEntity e)
         {
             PondCanvas.CreateEntity(e.Id, e.X, e.Y, e.Color);
+            e.OnCreated();
         }
 
         private void EngineOnEntityMoved(object sender, (int, int) position)

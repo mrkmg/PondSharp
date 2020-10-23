@@ -1,8 +1,12 @@
-Client/wwwroot/js
-Client/node_modules
-Client/SampleProject/PondSharp.Examples/*.cs
-Client/SampleProject/PondSharp.Examples/*.dll
+/Client/node_modules
+/Client/wwwroot/js
+/Client/wwwroot/user-scripts/
+/Client/SampleProject/PondSharp.Examples/*.cs
+/Client/SampleProject/PondSharp.Examples/*.dll
+/Client/SampleProject/PondSharp.Examples/PondSharp.UserScripts.xml
 /Client/wwwroot/sample-project.zip
+/Build/
+
 
 
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
@@ -441,5 +445,3 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-/Client/wwwroot/user-scripts/
-/Client/SampleProject/PondSharp.Examples/PondSharp.UserScripts.xml

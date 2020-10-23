@@ -231,7 +231,7 @@
 
     private async Task CompileSource()
     {
-        await Reset().ConfigureAwait(false);
+        Reset();
 
         try
         {
@@ -272,11 +272,11 @@
         _output = "Running";
     }
 
-    private async Task Reset()
+    private void Reset()
     {
         foreach (var instance in _engine.Entities)
         {
-            await _canvas.DestroyEntity(instance.Id).ConfigureAwait(false);
+            _canvas.DestroyEntity(instance.Id);
         }
         _engine.ClearAllEntities();
     }

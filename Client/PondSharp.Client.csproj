@@ -5,7 +5,7 @@
     <RazorLangVersion>3.0</RazorLangVersion>
     <BlazorEnableCompression>false</BlazorEnableCompression>
     <AssemblyVersion>1.0.1</AssemblyVersion>
-    <BlazorWebAssemblyEnableLinking Condition="'$(Configuration)'!='Release'">false</BlazorWebAssemblyEnableLinking>
+    <BlazorWebAssemblyEnableLinking>false</BlazorWebAssemblyEnableLinking>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Examples\PondSharp.Examples.csproj" />
     <ProjectReference Include="..\Shared\PondSharp.Shared.csproj" />
     <ProjectReference Include="..\UserScripts\PondSharp.UserScripts.csproj" />
   </ItemGroup>

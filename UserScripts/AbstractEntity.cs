@@ -101,7 +101,7 @@ namespace PondSharp.UserScripts
 
         public override int GetHashCode()
         {
-            return (Id != null ? Id.GetHashCode() : 0);
+            return Id.GetHashCode();
         }
     }
 #pragma warning restore 1591

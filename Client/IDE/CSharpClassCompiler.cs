@@ -98,9 +98,7 @@ namespace PondSharp.Client.IDE
             var neededAssemblyLocations = referenceTypes
                 .Select(type => type.Assembly.Location)
                 .Distinct()
-#if DEBUG
                 .Concat(new [] { "netstandard.dll" })
-#endif
                 .ToArray();
 
             var missingAssemblies = neededAssemblyLocations

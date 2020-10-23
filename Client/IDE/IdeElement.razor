@@ -62,7 +62,7 @@
     private CSharpClassCompiler _compiler;
     private Dictionary<string, string> _sources = new Dictionary<string, string>();
     private string _selectedSource = string.Empty;
-    private enum EditorPromptType {None, Delete, Add, Rename};
+    private enum EditorPromptType {None, Delete, Add, Rename}
     private EditorPromptType _editorPromptType = EditorPromptType.None;
     private string _editorPromptName = string.Empty;
     private string _renameScriptOriginalName = string.Empty;
@@ -91,10 +91,9 @@
         await ReadSources().ConfigureAwait(false);
     }
 
-    public IEnumerable<(string fullName, string name)> GetTypeNamesOf(Type type) =>
+    public IEnumerable<Type> GetTypesOf(Type type) =>
         _compiler
-            .AvailableInstances(type)
-            .Select(t => (t, t.Split('.').Last()));
+            .AvailableInstances(type);
 
     public T CreateInstance<T>(string fullName) where T : class =>
         _compiler.New<T>(fullName);
@@ -214,7 +213,7 @@
         await WriteAllSources().ConfigureAwait(false);
     }
 
-    private ValueTask WriteAllSources() => LocalStorage.SetItemAsync(_savedScriptsKey, _sources.Select(s => new SavedSource
+    private ValueTask WriteAllSources() => LocalStorage.SetItemAsync(SavedScriptsKey, _sources.Select(s => new SavedSource
     {
         Name = s.Key,
         Source = s.Value
@@ -239,13 +238,13 @@
         }
     }
 
-    private string _savedScriptsKey => $"saved_scripts:{UserScriptsVersion}";
+    private string SavedScriptsKey => $"saved_scripts:{UserScriptsVersion}";
     private async Task ReadSources()
     {
-        var hasLocalScripts = await LocalStorage.ContainKeyAsync(_savedScriptsKey).ConfigureAwait(false);
+        var hasLocalScripts = await LocalStorage.ContainKeyAsync(SavedScriptsKey).ConfigureAwait(false);
         if (hasLocalScripts)
         {
-            var sources = await LocalStorage.GetItemAsync<SavedSource[]>(_savedScriptsKey).ConfigureAwait(false);
+            var sources = await LocalStorage.GetItemAsync<SavedSource[]>(SavedScriptsKey).ConfigureAwait(false);
             _sources = sources.ToDictionary(s => s.Name, s => s.Source);
         }
         if (_sources.Count == 0)

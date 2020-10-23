@@ -9,14 +9,14 @@ namespace PondSharp.Examples
     /// </summary>
     public abstract class BaseEntity : AbstractEntity
     {
-        protected int _forceX = 0;
-        protected int _forceY = 0;
-        protected readonly Random _random = new Random();
+        protected int ForceX;
+        protected int ForceY;
+        protected readonly Random Random = new Random();
         
         protected void ChooseRandomDirection()
         {
-            _forceX = _random.Next(-1, 2);
-            _forceY = _random.Next(-1, 2);
+            ForceX = Random.Next(-1, 2);
+            ForceY = Random.Next(-1, 2);
         }
 
         protected static (int, int) GetForceDirection(int x, int y)

@@ -9,13 +9,13 @@ namespace PondSharp.Client.Pond
 {
     public sealed class PondManager
     {
-        public readonly PondCanvas PondCanvas;
-        public readonly PondEngine PondEngine;
+        private readonly PondCanvas _pondCanvas;
+        private readonly PondEngine _pondEngine;
         
         private readonly Timer _tickTimer;
         private DateTime _lastTime = DateTime.Now;
         private readonly Random _random = new Random();
-        private int _nextId = 0;
+        private int _nextId;
         
         public double CurrentTickTime = 1;
         public bool IsRunning => _tickTimer.Enabled;
@@ -25,12 +25,12 @@ namespace PondSharp.Client.Pond
             _tickTimer = new Timer(16); // 60 tps (1000/60)
             _tickTimer.Elapsed += (sender, args) => Tick();
             
-            PondCanvas = canvas;
-            PondEngine = engine;
+            _pondCanvas = canvas;
+            _pondEngine = engine;
 
-            PondEngine.EntityAdded += EngineOnEntityAdded;
-            PondEngine.EntityMoved += EngineOnEntityMoved;
-            PondEngine.EntityColorChanged += EngineOnEntityColorChanged;
+            _pondEngine.EntityAdded += EngineOnEntityAdded;
+            _pondEngine.EntityMoved += EngineOnEntityMoved;
+            _pondEngine.EntityColorChanged += EngineOnEntityColorChanged;
         }
         
         private void Tick()
@@ -40,13 +40,13 @@ namespace PondSharp.Client.Pond
             CurrentTickTime = diff * 0.99 + CurrentTickTime * 0.01;
             try
             {
-                foreach (var entity in PondEngine.Entities)
+                foreach (var entity in _pondEngine.Entities)
                     entity.Tick();
-                PondCanvas.FlushChangeQueue();
+                _pondCanvas.FlushChangeQueue();
             }
             catch (Exception e)
             {
-                PondCanvas.ClearChangeQueue();
+                _pondCanvas.ClearChangeQueue();
                 Console.WriteLine($"Tick Exception: ${e.Message}");
                 Stop().RunSynchronously();
             }
@@ -55,7 +55,7 @@ namespace PondSharp.Client.Pond
         
         private void EngineOnEntityAdded(object sender, IEntity e)
         {
-            PondCanvas.CreateEntity(e.Id, e.X, e.Y, e.Color);
+            _pondCanvas.CreateEntity(e.Id, e.X, e.Y, e.Color);
             e.OnCreated();
         }
 
@@ -63,26 +63,26 @@ namespace PondSharp.Client.Pond
         {
             if (!(sender is IEntity entity)) return;
             var (x, y) = position;
-            PondCanvas.MoveEntity(entity.Id, x, y);
+            _pondCanvas.MoveEntity(entity.Id, x, y);
         }
 
         private void EngineOnEntityColorChanged(object sender, int color)
         {
             if (!(sender is IEntity entity)) return;
-            PondCanvas.ChangeEntityColor(entity.Id, color);
+            _pondCanvas.ChangeEntityColor(entity.Id, color);
         }
 
         public async Task Start()
         {
             _lastTime = DateTime.Now;
             _tickTimer.Enabled = true;
-            await PondCanvas.Start().ConfigureAwait(false);
+            await _pondCanvas.Start().ConfigureAwait(false);
         }
 
         public async Task Stop()
         {
             _tickTimer.Enabled = false;
-            await PondCanvas.Stop().ConfigureAwait(false);
+            await _pondCanvas.Stop().ConfigureAwait(false);
         }
 
         public void InitializeAndCreateEntity(IEntity entity)
@@ -90,20 +90,20 @@ namespace PondSharp.Client.Pond
             int ColorRnd(int min) => _random.Next(min) + (0xFF - min);
             entity.Initialize(
                 _nextId++,
-                PondEngine,
-                _random.Next(-PondCanvas.Width/2, PondCanvas.Width/2-1), 
-                _random.Next(-PondCanvas.Height/2, PondCanvas.Height/2-1),
+                _pondEngine,
+                _random.Next(-_pondCanvas.Width/2, _pondCanvas.Width/2-1), 
+                _random.Next(-_pondCanvas.Height/2, _pondCanvas.Height/2-1),
                 Color.FromArgb(ColorRnd(0x66), ColorRnd(0x66), ColorRnd(0x66)).ToArgb());
-            PondEngine.InsertEntity(entity);
+            _pondEngine.InsertEntity(entity);
         }
 
         public void Reset()
         {
-            foreach (var instance in PondEngine.Entities)
+            foreach (var instance in _pondEngine.Entities)
             {
-                PondCanvas.DestroyEntity(instance.Id);
+                _pondCanvas.DestroyEntity(instance.Id);
             }
-            PondEngine.ClearAllEntities();
+            _pondEngine.ClearAllEntities();
         }
     }
 }

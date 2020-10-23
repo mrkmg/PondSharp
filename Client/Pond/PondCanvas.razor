@@ -34,10 +34,6 @@
         {
             _id = await JsRuntime.InvokeAsync<string>("createPond", _pondHolder, Width, Height, GridSize);
         }
-        else
-        {
-            await JsRuntime.InvokeVoidAsync(Method("resize"), Width, Height, GridSize);
-        }
     }
     
     public void CreateEntity(int entityId, int x, int y, int color) => 

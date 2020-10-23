@@ -8,9 +8,17 @@ namespace PondSharp.UserScripts
     /// </summary>
     public abstract class AbstractEntity : IEntity
     {
-
+        private int _id;
         /// <inheritdoc />
-        public int Id { get; private set; }
+        public int Id
+        {
+            get => _id;
+            private set
+            {
+                if (_intialized) throw new InvalidOperationException("Already Initialized");
+                _id = value;
+            }
+        }
         
         private IEngine Engine { get; set; }
 
@@ -95,8 +103,7 @@ namespace PondSharp.UserScripts
         {
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != this.GetType()) return false;
-            return Equals((AbstractEntity) obj);
+            return obj.GetType() == GetType() && Equals((AbstractEntity) obj);
         }
 
         public override int GetHashCode()

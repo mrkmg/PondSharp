@@ -21,13 +21,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Examples\PondSharp.Examples.csproj" />
     <ProjectReference Include="..\Shared\PondSharp.Shared.csproj" />
     <ProjectReference Include="..\UserScripts\PondSharp.UserScripts.csproj" />
+    <ProjectReference Include="..\Examples\PondSharp.Examples.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="wwwroot\user-scripts\**" />
+    <None Remove="wwwroot\user-scripts\**" />
     <None Remove="wwwroot\js\**" />
     <None Remove="wwwroot\sample-project.zip" />
     <ExampleFiles Include="$(SolutionDir)Examples\*.cs" />
@@ -40,9 +40,11 @@
     <Content Remove="SampleProject\**" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="wwwroot\user-scripts" />
-  </ItemGroup>
+  <PropertyGroup>
+    <JSDirectory>wwwroot\js</JSDirectory>
+    <USDirectory>wwwroot\user-scripts\</USDirectory>
+    <SampleProjectFile>wwwwroot\sample-project.zip</SampleProjectFile>
+  </PropertyGroup>
   
   <Target Name="CopyExampleScripts" BeforeTargets="PreBuildEvent">
     <Message Text="Copying Example Files" Importance="high" />
@@ -60,5 +62,13 @@
   <Target Name="BuildWebAssets" BeforeTargets="PreBuildEvent" Condition="$(Configuration) == 'Release'">
     <Message Text="Running NPM Build" Importance="high" />
     <Exec Command="npm run build:release" />
+  </Target>
+  
+  <Target Name="CleanJSFiles" BeforeTargets="Clean">
+    <RemoveDir Directories="$(JSDirectory);$(USDirectory)" />
+    <Delete Files="$(ProjectDir)$(SampleProjectFile)">
+      <Output TaskParameter="DeletedFiles" ItemName="DeletedList"/>
+    </Delete>
+    <Message Text="Deleted files: '@(DeletedList)'"/>
   </Target>
 </Project>

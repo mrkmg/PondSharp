@@ -12,11 +12,11 @@ namespace PondSharp.Examples
         
         public override void Tick()
         {
-            if (_random.Next(100) == 0) 
+            if (Random.Next(100) == 0) 
             {
                 ChooseRandomDirection();
             }
-            MoveTo(X + _forceX, Y + _forceY);
+            MoveTo(X + ForceX, Y + ForceY);
         }
     }
 }

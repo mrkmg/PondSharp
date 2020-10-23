@@ -56,9 +56,11 @@ namespace PondSharp.Client.IDE
 
             ms.Seek(0, SeekOrigin.Begin);
             _assembly = Assembly.Load(ms.ToArray());
+            
+            
         }
 
-        private string GetDiagnosticError(Diagnostic diagnostic)
+        private static string GetDiagnosticError(Diagnostic diagnostic)
         {
             var lineSpan = diagnostic.Location.GetMappedLineSpan();
             return
@@ -68,15 +70,15 @@ namespace PondSharp.Client.IDE
                 diagnostic.GetMessage();
         }
 
-        public IEnumerable<string> AvailableInstances(Type targetType)
+        public IEnumerable<Type> AvailableInstances(Type targetType)
         {
-            if (_assembly is null) return new string[0];
+            if (_assembly is null) return new Type[0];
 
             return _assembly.GetTypes()
                 .Where(t => t.IsClass)
-                .Where(t => targetType.IsClass && t.IsSubclassOf(targetType) || targetType.IsInterface && t.GetInterfaces().Contains(targetType))
-                .Where(t => !t.IsAbstract && t.IsPublic)
-                .Select(t => t.FullName);
+                .Where(t => targetType.IsClass && t.IsSubclassOf(targetType) ||
+                            targetType.IsInterface && t.GetInterfaces().Contains(targetType))
+                .Where(t => !t.IsAbstract && t.IsPublic);
         }
 
         public T New<T>(string instanceName, params object[] args) where T : class
@@ -116,7 +118,7 @@ namespace PondSharp.Client.IDE
 
     public sealed class CompileException : Exception
     {
-        public IList<string> Errors { get; private set; }
+        public IList<string> Errors { get; }
 
         public CompileException(IList<string> errors) : base("Compilation Exception")
         {

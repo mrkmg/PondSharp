@@ -14,12 +14,6 @@ namespace PondSharp.Client.Pond
             ResetSize(minX, maxX, minY, maxY);
         }
 
-        public void ChangeSize(int minX, int maxX, int minY, int maxY)
-        {
-            ClearAllEntities();
-            ResetSize(minX, maxX, minY, maxY);
-        }
-
         private void ResetSize(int minX, int maxX, int minY, int maxY)
         {
             _entitiesByBlock.Clear();
@@ -33,14 +27,11 @@ namespace PondSharp.Client.Pond
         }
 
 
-        private Dictionary<int, HashSet<IEntity>> _entitiesByBlock = new Dictionary<int, HashSet<IEntity>>();
-        private Dictionary<int, IEntity> _entitiesById = new Dictionary<int, IEntity>();
+        private readonly Dictionary<int, HashSet<IEntity>> _entitiesByBlock = new Dictionary<int, HashSet<IEntity>>();
+        private readonly Dictionary<int, IEntity> _entitiesById = new Dictionary<int, IEntity>();
         
         public override IEnumerable<IEntity> Entities => _entitiesById.Values;
         public override IEntity GetEntity(int entityId) => _entitiesById[entityId];
-
-        private static int EntityDist(IEntity e1, IEntity e2) =>
-            Dist(e1.X, e1.Y, e2.X, e2.Y);
         
         private static int Dist(int x1, int y1, int x2, int y2) =>
             (int) Math.Sqrt(Math.Pow(x1 - x2, 2) + Math.Pow(y1 - y2, 2));

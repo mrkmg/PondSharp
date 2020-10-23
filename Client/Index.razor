@@ -14,18 +14,6 @@
     <div class="row">
         <div class="col-auto" style="max-width: @(_pondWidth * _gridSize + 10)px">
             <PondCanvas @ref="_canvas" Width="@_pondWidth" Height="@_pondHeight" GridSize="@_gridSize"></PondCanvas>
-            @if (IsDebug)
-            {
-                <div class="row">
-                    <div class="col">
-                        <div class="input-group input-group-sm">
-                            <input class="form-control" value="@_pondWidth" @onchange="@(e => SetPondWidth(Convert.ToInt32(e.Value)))" />
-                            <input class="form-control" value="@_pondHeight" @onchange="@(e => SetPondHeight(Convert.ToInt32(e.Value)))" />
-                            <input class="form-control" value="@_gridSize" @onchange="@(e => SetPondGrid(Convert.ToInt32(e.Value)))" />
-                        </div>
-                    </div>
-                </div>
-            }
             <div class="row">
                 <div class="col-auto">
                     <div class="btn-group bottom-tabs">
@@ -90,12 +78,6 @@
 
 @code
 {
-#if DEBUG
-        public const bool IsDebug = true;
-#else
-    public const bool IsDebug = false;
-#endif
-
     private string _output = "No Instance Loaded";
     private IList<string> _errors = new List<string>();
     private string _selectedType = string.Empty;
@@ -123,9 +105,12 @@
     private readonly Dictionary<string, int> _countToCreate = new Dictionary<string, int>();
 
     private PondEngine _engine;
-    private PondCanvas _canvas;
     private PondManager _manager;
+#pragma warning disable 649
+    // Elements are assigned from blazor
     private IdeElement _ideElement;
+    private PondCanvas _canvas;
+#pragma warning restore 649
     
     private int _gridSize = 2;
     private int _pondWidth = 400;
@@ -161,7 +146,11 @@
 
     private async Task ReadAssemblyInfo()
     {
-        _availableEntityTypes = _ideElement.GetTypeNamesOf(typeof(IEntity)).ToArray();
+        var types = _ideElement.GetTypesOf(typeof(IEntity));
+
+        _availableEntityTypes = types.Select(t => t.FullName)
+            .Select(t => (t, t?.Split('.').Last())).ToArray();
+
         if (_availableEntityTypes.Length == 0)
         {
             _selectedType = null;
@@ -176,33 +165,7 @@
             if (await LocalStorage.ContainKeyAsync($"ec-{fullName}").ConfigureAwait(false))
                 _countToCreate.Add(fullName, await LocalStorage.GetItemAsync<int>($"ec-{fullName}").ConfigureAwait(false));
             else
-                _countToCreate.Add(fullName, 10);
-    }
-
-    private void SetPondWidth(int width)
-    {
-        if (_manager == null) return;
-        _manager.Reset();
-        _pondWidth = width;
-        _engine.ChangeSize(-_pondWidth/2, _pondWidth/2-1, -_pondHeight/2, _pondHeight/2-1);
-        StateHasChanged();
-    }
-
-    private void SetPondHeight(int height)
-    {
-        if (_manager == null) return;
-        _manager.Reset();
-        _pondHeight = height;
-        _engine.ChangeSize(-_pondWidth/2, _pondWidth/2-1, -_pondHeight/2, _pondHeight/2-1);
-        StateHasChanged();
-    }
-
-    private void SetPondGrid(int height)
-    {
-        if (_manager == null) return;
-        _manager.Reset();
-        _gridSize = height;
-        StateHasChanged();
+                _countToCreate.Add(fullName, 100);
     }
 
     private void TryCreatePondManager()

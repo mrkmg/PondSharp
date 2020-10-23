@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+// ReSharper disable UnusedMemberInSuper.Global UnusedMember.Global EventNeverSubscribedTo.Global UnusedParameter.Global
 
 namespace PondSharp.UserScripts
 {

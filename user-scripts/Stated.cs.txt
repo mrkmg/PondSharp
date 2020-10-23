@@ -90,7 +90,7 @@ namespace PondSharp.Examples
             {
                 System.Drawing.Color color;
                 do color = System.Drawing.Color.FromArgb(Random.Next(255), Random.Next(255), Random.Next(255));
-                while (color.GetBrightness() < 0.8);
+                while (color.GetBrightness() < 0.5);
                 return color.ToArgb();
             }
 

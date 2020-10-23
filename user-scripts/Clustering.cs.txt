@@ -23,7 +23,7 @@ namespace PondSharp.Examples
         private int ThinkCooldown;
 
         private int RndThinkDelay(int max, int curve = 4, int divisors = 20) =>
-            (int) (Math.Pow(_random.Next(divisors) + 1, curve) / Math.Pow(divisors, curve) * max); 
+            (int) (Math.Pow(Random.Next(divisors) + 1, curve) / Math.Pow(divisors, curve) * max); 
         
         public override void OnCreated()
         {
@@ -36,11 +36,11 @@ namespace PondSharp.Examples
         {
             SetDirection();
             
-            if (MoveTo(X + _forceX, Y + _forceY)) return;
+            if (MoveTo(X + ForceX, Y + ForceY)) return;
             
             // reverse if stuck
-            _forceX = -_forceX;
-            _forceY = -_forceY;
+            ForceX = -ForceX;
+            ForceY = -ForceY;
             ThinkCooldown = 10;
         }
 
@@ -57,7 +57,7 @@ namespace PondSharp.Examples
                 
             ChooseForceDirections(entities);
 
-            if (_random.Next(100) != 0) return;
+            if (Random.Next(100) != 0) return;
             
             ChangeColor(WanderingColor);
             ChooseRandomDirection();
@@ -72,8 +72,8 @@ namespace PondSharp.Examples
             var closestEntity = entities
                 .OrderBy(e => EntityDist(this, e))
                 .First();
-            (_forceX, _forceY) = GetForceDirection(X - closestEntity.X, Y - closestEntity.Y);
-            if (_forceX == 0 && _forceY == 0) ChooseRandomDirection();
+            (ForceX, ForceY) = GetForceDirection(X - closestEntity.X, Y - closestEntity.Y);
+            if (ForceX == 0 && ForceY == 0) ChooseRandomDirection();
             ThinkCooldown = RndThinkDelay(30, 6);
             ChangeColor(FleeingColor);
             return true;
@@ -96,19 +96,19 @@ namespace PondSharp.Examples
             {
                 ChangeColor(SeparatingColor);
                 // Move away from group center
-                (_forceX, _forceY) = GetForceDirection(X - groupCenterX, Y - groupCenterY);
+                (ForceX, ForceY) = GetForceDirection(X - groupCenterX, Y - groupCenterY);
                 ThinkCooldown = RndThinkDelay(entities.Count);
             } else if (distanceToCenter > 5)
             {
                 ChangeColor(JoiningColor);
                 // Move toward group center
-                (_forceX, _forceY) = GetForceDirection(groupCenterX - X, groupCenterY - Y);
+                (ForceX, ForceY) = GetForceDirection(groupCenterX - X, groupCenterY - Y);
                 ThinkCooldown = RndThinkDelay(10);
             }
             else
             {
                 ChangeColor(RestingColor);
-                (_forceX, _forceY) = (0, 0);
+                (ForceX, ForceY) = (0, 0);
             }
         }
     }

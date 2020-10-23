@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using PondSharp.UserScripts;
 
@@ -24,15 +23,15 @@ namespace PondSharp.Examples
     /// </summary>
     public class Stated : AbstractEntity
     {
-        private int DestinationX = 0;
-        private int DestinationY = 0;
+        private int DestinationX;
+        private int DestinationY;
         private State MyState;
 
         private static List<State> States = new List<State>();
 
         public override void OnCreated()
         {
-            if (States.Count == 0 || !States.Any(s => !s.IsFull))
+            if (States.Count == 0 || States.All(s => s.IsFull))
             {
                 MyState = new State {Leader = this};
                 States.Add(MyState);
@@ -87,14 +86,23 @@ namespace PondSharp.Examples
                 return (x + (int)(dist * Math.Sin(angle ?? 0)), y + (int)(dist * Math.Cos(angle ?? 0)));
             }
 
+            private static int RandomColor()
+            {
+                System.Drawing.Color color;
+                do color = System.Drawing.Color.FromArgb(Random.Next(255), Random.Next(255), Random.Next(255));
+                while (color.GetBrightness() < 0.8);
+                return color.ToArgb();
+            }
+
             public Stated Leader { get; set; }
             public List<Stated> Followers { get; } = new List<Stated>();
-            public int StateColor = System.Drawing.Color.FromArgb(Random.Next(255), Random.Next(255), Random.Next(255)).ToArgb();
-            public bool IsFull => Followers.Count >= 20;
+            public int StateColor = RandomColor();
+            public bool IsFull => Followers.Count >= GroupSize;
             private CurrentStateType CurrentState { get; set; } = CurrentStateType.Pending;
-            private int CurrentCenterX = 0;
-            private int CurrentCenterY = 0;
-            private int CurrentDistance = 0;
+            private int CurrentCenterX;
+            private int CurrentCenterY;
+            private int CurrentDistance;
+            private int GroupSize = 5 + Random.Next(20);
 
             private bool DestinationsFulfilled =>
                 !(Leader?.DestinationX != Leader?.X || Leader?.DestinationY != Leader?.Y ||
@@ -127,7 +135,7 @@ namespace PondSharp.Examples
                         var i = 0;
                         foreach (var follower in Followers)
                         {
-                            var angle = 2.0 * 3.1415 * ( i++ / 20.0 );
+                            var angle = 2.0 * 3.1415 * ( i++ / (double) Followers.Count );
                             (follower.DestinationX, follower.DestinationY) = RandomPointOnCircle(
                                 CurrentCenterX, 
                                 CurrentCenterY, 

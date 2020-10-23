@@ -81,18 +81,17 @@ namespace PondSharp.Examples
         private class State
         {
             private static readonly Random Random = new Random();
-            private static (int, int) RandomPointOnCircle(int x, int y, int dist)
+            private static (int, int) RandomPointOnCircle(int x, int y, int dist, double? angle = null)
             {
-                var angle = 2.0 * 3.1415 * Random.NextDouble();
-                return (x + (int)(dist * Math.Sin(angle)), y + (int)(dist * Math.Cos(angle)));
+                if (angle == null) angle = 2.0 * 3.1415 * Random.NextDouble();
+                return (x + (int)(dist * Math.Sin(angle ?? 0)), y + (int)(dist * Math.Cos(angle ?? 0)));
             }
 
             public Stated Leader { get; set; }
             public List<Stated> Followers { get; } = new List<Stated>();
-            public readonly int StateColor = System.Drawing.Color.FromArgb(Random.Next(0x77) + 0x88, Random.Next(0x77) + 0x88, Random.Next(0x77) + 0x88).ToArgb();
+            public int StateColor = System.Drawing.Color.FromArgb(Random.Next(255), Random.Next(255), Random.Next(255)).ToArgb();
             public bool IsFull => Followers.Count >= 20;
             private CurrentStateType CurrentState { get; set; } = CurrentStateType.Pending;
-            private int Cooldown = 0;
 
             private bool DestinationsFulfilled =>
                 !(Leader?.DestinationX != Leader?.X || Leader?.DestinationY != Leader?.Y ||
@@ -104,15 +103,21 @@ namespace PondSharp.Examples
                 {
                     case CurrentStateType.Pending:
                     {
-                        Leader.DestinationX = Random.Next(Leader.WorldMinX + 20, Leader.WorldMaxX - 20);
-                        Leader.DestinationY = Random.Next(Leader.WorldMinY + 20, Leader.WorldMaxY - 20);
+                        var dist = 5 + Random.Next(20);
+                        var x = Random.Next(Leader.WorldMinX + dist + 1, Leader.WorldMaxX - dist - 1);
+                        var y = Random.Next(Leader.WorldMinY + dist + 1, Leader.WorldMaxY - dist - 1);
+                        Leader.DestinationX = x;
+                        Leader.DestinationY = y;
 
+                        var i = 0;
                         foreach (var follower in Followers)
                         {
+                            var angle = 2.0 * 3.1415 * ( i++ / 20.0 );
                             (follower.DestinationX, follower.DestinationY) = RandomPointOnCircle(
-                                Leader.DestinationX, 
-                                Leader.DestinationY, 
-                                15
+                                x, 
+                                y, 
+                                dist,
+                                angle
                             );
                         }
 
@@ -123,16 +128,11 @@ namespace PondSharp.Examples
                         if (DestinationsFulfilled)
                         {
                             CurrentState = CurrentStateType.Waiting;
-                            Cooldown = Random.Next(160) + 60;
                         }
                             
                         break;
                     case CurrentStateType.Waiting:
-                        if (Cooldown > 0)
-                        {
-                            Cooldown--;
-                            return;
-                        }
+                        if (States.Any(s => s.CurrentState == CurrentStateType.Joining)) break;
                         
                         Leader.DestinationX = Random.Next(Leader.WorldMinX, Leader.WorldMaxX);
                         Leader.DestinationY = Random.Next(Leader.WorldMinY, Leader.WorldMaxY);

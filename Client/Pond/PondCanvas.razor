@@ -9,6 +9,7 @@
     private const int QueueLength = 5000;
 
     private IJSInProcessRuntime Js => (IJSInProcessRuntime) JsRuntime;
+    private Microsoft.JSInterop.WebAssembly.WebAssemblyJSRuntime JsRaw => (Microsoft.JSInterop.WebAssembly.WebAssemblyJSRuntime) JsRuntime;
     
     [Parameter][Required]
     public int Width { get; set; }
@@ -23,7 +24,8 @@
     private ElementReference _pondHolder;
     private string Method(string method) => $"ponds.{_id}.{method}";
     
-    private int _lastChangeRequestIndex = -1;
+    private int _currentChangeRequestIndex = -1;
+    private int CurrentChangeRequestsCount => _currentChangeRequestIndex + 1;
     private EntityChangeRequest[] _entityChangeRequests = new EntityChangeRequest[QueueLength];
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -44,27 +46,24 @@
     public void DestroyEntity(int entityId) =>
         Js.InvokeVoid(Method("destroyEntity"), entityId);
 
-    public void MoveEntity(int entityId, int x, int y) =>
-        Js.InvokeVoid(Method("moveEntity"), entityId, x, y);
-
-    public void QueueMoveEntity(int entityId, int x, int y)
+    public void MoveEntity(int entityId, int x, int y)
     {
-        _lastChangeRequestIndex++;
-        _entityChangeRequests[_lastChangeRequestIndex].EntityId = entityId;
-        _entityChangeRequests[_lastChangeRequestIndex].Type = EntityChangeRequestType.Position;
-        _entityChangeRequests[_lastChangeRequestIndex].X = x;
-        _entityChangeRequests[_lastChangeRequestIndex].Y = y;
-        if (_lastChangeRequestIndex == QueueLength - 1)
+        _currentChangeRequestIndex++;
+        _entityChangeRequests[_currentChangeRequestIndex].EntityId = entityId;
+        _entityChangeRequests[_currentChangeRequestIndex].Type = EntityChangeRequestType.Position;
+        _entityChangeRequests[_currentChangeRequestIndex].X = x;
+        _entityChangeRequests[_currentChangeRequestIndex].Y = y;
+        if (CurrentChangeRequestsCount == QueueLength)
             FlushChangeQueue();
     }
 
-    public void QueueChangeEntityColor(int entityId, int color)
+    public void ChangeEntityColor(int entityId, int color)
     {
-        _lastChangeRequestIndex++;
-        _entityChangeRequests[_lastChangeRequestIndex].EntityId = entityId;
-        _entityChangeRequests[_lastChangeRequestIndex].Type = EntityChangeRequestType.Color;
-        _entityChangeRequests[_lastChangeRequestIndex].Color = color;
-        if (_lastChangeRequestIndex == QueueLength - 1)
+        _currentChangeRequestIndex++;
+        _entityChangeRequests[_currentChangeRequestIndex].EntityId = entityId;
+        _entityChangeRequests[_currentChangeRequestIndex].Type = EntityChangeRequestType.Color;
+        _entityChangeRequests[_currentChangeRequestIndex].Color = color;
+        if (CurrentChangeRequestsCount == QueueLength - 1)
             FlushChangeQueue();
     }
 
@@ -74,16 +73,16 @@
     public ValueTask Stop() =>
         JsRuntime.InvokeVoidAsync(Method("stop"));
 
-    public void ClearChangeQueue() => _lastChangeRequestIndex = -1;
+    public void ClearChangeQueue() => _currentChangeRequestIndex = -1;
     
     public void FlushChangeQueue()
     {
-        if (_lastChangeRequestIndex == -1) return;
-        var runtime = (Microsoft.JSInterop.WebAssembly.WebAssemblyJSRuntime) JsRuntime;
-        var changeRequests = _entityChangeRequests.AsSpan(0, _lastChangeRequestIndex + 1).ToArray();
-        runtime.InvokeUnmarshalled<EntityChangeRequest[], bool>(Method("processEntityChangeRequestsRaw"), changeRequests);
+        if (_currentChangeRequestIndex == -1) return;
         
-        _lastChangeRequestIndex = -1;
+        var changeRequests = _entityChangeRequests.AsSpan(0, CurrentChangeRequestsCount).ToArray();
+        JsRaw.InvokeUnmarshalled<EntityChangeRequest[], bool>(Method("processEntityChangeRequestsRaw"), changeRequests);
+        
+        _currentChangeRequestIndex = -1;
     }
     
     private enum EntityChangeRequestType

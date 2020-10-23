@@ -99,9 +99,8 @@
     public T CreateInstance<T>(string fullName) where T : class =>
         _compiler.New<T>(fullName);
     
-    public async Task Compile()
+    public void Compile()
     {
-        await SaveSource().ConfigureAwait(false);
         _compiler.Compile(_sources);
     }
 

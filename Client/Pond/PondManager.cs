@@ -63,13 +63,13 @@ namespace PondSharp.Client.Pond
         {
             if (!(sender is IEntity entity)) return;
             var (x, y) = position;
-            PondCanvas.QueueMoveEntity(entity.Id, x, y);
+            PondCanvas.MoveEntity(entity.Id, x, y);
         }
 
         private void EngineOnEntityColorChanged(object sender, int color)
         {
             if (!(sender is IEntity entity)) return;
-            PondCanvas.QueueChangeEntityColor(entity.Id, color);
+            PondCanvas.ChangeEntityColor(entity.Id, color);
         }
 
         public async Task Start()

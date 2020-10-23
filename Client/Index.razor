@@ -239,7 +239,8 @@
             _errors.Clear();
             StateHasChanged();
             await Task.Delay(TimeSpan.FromMilliseconds(100)).ConfigureAwait(false);
-            await _ideElement.Compile().ConfigureAwait(false);
+            await _ideElement.TriggerSave().ConfigureAwait(false);
+            _ideElement.Compile();
             await ReadAssemblyInfo().ConfigureAwait(false);
             await StartPond().ConfigureAwait(false);
             StateHasChanged();

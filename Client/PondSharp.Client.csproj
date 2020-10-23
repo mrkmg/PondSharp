@@ -21,7 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Examples\PondSharp.Examples.csproj" />
     <ProjectReference Include="..\Shared\PondSharp.Shared.csproj" />
     <ProjectReference Include="..\UserScripts\PondSharp.UserScripts.csproj" />
   </ItemGroup>

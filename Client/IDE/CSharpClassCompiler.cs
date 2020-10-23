@@ -33,6 +33,7 @@ namespace PondSharp.Client.IDE
 
         public void Compile(Dictionary<string, string> sourceTexts)
         {
+            _assembly = null;
             var assemblyName = Path.GetRandomFileName();
             var options = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp8);
             

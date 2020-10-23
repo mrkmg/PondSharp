@@ -72,10 +72,10 @@ namespace PondSharp.Examples
 
             if (X == DestinationX && Y == DestinationY) return;
 
-            var (x, y) = (DestinationX - X, DestinationY - Y);
+            var (x, y) = ((double)DestinationX - X, (double)DestinationY - Y);
             var dM = Math.Max(Math.Abs(x), Math.Abs(y));
-            (x, y) = dM == 0 ? (0, 0) : ((int)Math.Round((double)x / dM), (int)Math.Round((double)y / dM));
-            MoveTo(X + x, Y + y);
+            var (fx, fy) = dM == 0 ? (0, 0) : ((int)Math.Round(x / dM), (int)Math.Round(y / dM));
+            MoveTo(X + fx, Y + fy);
         }
 
         private class State
@@ -92,6 +92,9 @@ namespace PondSharp.Examples
             public int StateColor = System.Drawing.Color.FromArgb(Random.Next(255), Random.Next(255), Random.Next(255)).ToArgb();
             public bool IsFull => Followers.Count >= 20;
             private CurrentStateType CurrentState { get; set; } = CurrentStateType.Pending;
+            private int CurrentCenterX = 0;
+            private int CurrentCenterY = 0;
+            private int CurrentDistance = 0;
 
             private bool DestinationsFulfilled =>
                 !(Leader?.DestinationX != Leader?.X || Leader?.DestinationY != Leader?.Y ||
@@ -102,44 +105,55 @@ namespace PondSharp.Examples
                 switch (CurrentState)
                 {
                     case CurrentStateType.Pending:
-                    {
-                        var dist = 5 + Random.Next(20);
-                        var x = Random.Next(Leader.WorldMinX + dist + 1, Leader.WorldMaxX - dist - 1);
-                        var y = Random.Next(Leader.WorldMinY + dist + 1, Leader.WorldMaxY - dist - 1);
-                        Leader.DestinationX = x;
-                        Leader.DestinationY = y;
+                    {if (States.Any(s => s.CurrentState == CurrentStateType.Separating)) break;
+                        CurrentDistance = 5 + Random.Next(20);
+                        CurrentCenterX = Random.Next(Leader.WorldMinX + CurrentDistance + 1, Leader.WorldMaxX - CurrentDistance - 1);
+                        CurrentCenterY = Random.Next(Leader.WorldMinY + CurrentDistance + 1, Leader.WorldMaxY - CurrentDistance - 1);
+                        Leader.DestinationX = CurrentCenterX;
+                        Leader.DestinationY = CurrentCenterY;
 
-                        var i = 0;
                         foreach (var follower in Followers)
                         {
-                            var angle = 2.0 * 3.1415 * ( i++ / 20.0 );
-                            (follower.DestinationX, follower.DestinationY) = RandomPointOnCircle(
-                                x, 
-                                y, 
-                                dist,
-                                angle
-                            );
+                            follower.DestinationX = CurrentCenterX;
+                            follower.DestinationY = CurrentCenterY;
                         }
 
                         CurrentState = CurrentStateType.Joining;
                         break;
                     }
                     case CurrentStateType.Joining:
+                        if (!DestinationsFulfilled) break;
+                        
+                        var i = 0;
+                        foreach (var follower in Followers)
+                        {
+                            var angle = 2.0 * 3.1415 * ( i++ / 20.0 );
+                            (follower.DestinationX, follower.DestinationY) = RandomPointOnCircle(
+                                CurrentCenterX, 
+                                CurrentCenterY, 
+                                CurrentDistance,
+                                angle
+                            );
+                        }
+                        CurrentState = CurrentStateType.Exploding;
+                            
+                        break;
+                    case CurrentStateType.Exploding:
                         if (DestinationsFulfilled)
                         {
                             CurrentState = CurrentStateType.Waiting;
                         }
-                            
+
                         break;
                     case CurrentStateType.Waiting:
-                        if (States.Any(s => s.CurrentState == CurrentStateType.Joining)) break;
+                        if (States.Any(s => s.CurrentState == CurrentStateType.Exploding || s.CurrentState == CurrentStateType.Joining)) break;
                         
-                        Leader.DestinationX = Random.Next(Leader.WorldMinX, Leader.WorldMaxX);
-                        Leader.DestinationY = Random.Next(Leader.WorldMinY, Leader.WorldMaxY);
+                        Leader.DestinationX = 0;
+                        Leader.DestinationY = 0;
                         foreach (var follower in Followers)
                         {
-                            follower.DestinationX = Random.Next(Leader.WorldMinX, Leader.WorldMaxX);
-                            follower.DestinationY = Random.Next(Leader.WorldMinY, Leader.WorldMaxY);
+                            follower.DestinationX = 0;
+                            follower.DestinationY = 0;
                         }
 
                         CurrentState = CurrentStateType.Separating;
@@ -157,6 +171,7 @@ namespace PondSharp.Examples
         private enum CurrentStateType
         {
             Joining,
+            Exploding,
             Waiting,
             Separating,
             Pending

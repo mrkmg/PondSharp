@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
@@ -7,6 +7,7 @@
     <AssemblyVersion>1.0.1</AssemblyVersion>
     <BlazorWebAssemblyEnableLinking>false</BlazorWebAssemblyEnableLinking>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TypeScriptCompileBlocked>true</TypeScriptCompileBlocked>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,17 +28,28 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="wwwroot\user-scripts\**" />
-    <None Remove="wwwroot\js\**" />
-    <None Remove="wwwroot\sample-project.zip" />
     <ExampleFiles Include="$(SolutionDir)Examples\*.cs" />
+    <TypeScriptFiles Include="$(ProjectDir)ts\**\*.*" />
+    <CompiledJavascriptFiles Include="$(ProjectDir)wwwroot\js\main.*;$(ProjectDir)wwwroot\js\vendors.*;$(ProjectDir)wwwroot\js\ttf\codicon.ttf" />
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="wwwroot\user-scripts\**" />
+    <None Remove="wwwroot\js\**" />
     <None Remove="SampleProject\**" />
     <Compile Remove="SampleProject\**" />
+    <Compile Remove="wwwroot\js\**" />
+    <Compile Remove="wwwroot\user-scripts\**" />
     <EmbeddedResource Remove="SampleProject\**" />
+    <EmbeddedResource Remove="wwwroot\js\**" />
+    <EmbeddedResource Remove="wwwroot\user-scripts\**" />
     <Content Remove="SampleProject\**" />
+    <Content Remove="wwwroot\js\**" />
+    <Content Remove="wwwroot\user-scripts\**" />
+    <Content Remove="wwwroot\sample-project.zip" />
+  </ItemGroup>
+
+  <ItemGroup>
   </ItemGroup>
 
   <PropertyGroup>
@@ -46,29 +58,32 @@
     <SampleProjectFile>wwwwroot\sample-project.zip</SampleProjectFile>
   </PropertyGroup>
   
-  <Target Name="CopyExampleScripts" BeforeTargets="PreBuildEvent">
-    <Message Text="Copying Example Files" Importance="high" />
+  <Target Name="CopyExampleScriptsToUserScripts" BeforeTargets="Build" Inputs="@(ExampleFiles)" Outputs="@(ExampleFiles->'$(ProjectDir)\wwwroot\user-scripts\%(RecursiveDir)%(Filename)%(Extension).txt')">
+    <Message Text="Copying Example Files To User Scripts" Importance="high" />
     <Copy SourceFiles="@(ExampleFiles)" DestinationFiles="@(ExampleFiles->'$(ProjectDir)\wwwroot\user-scripts\%(RecursiveDir)%(Filename)%(Extension).txt')" />
+  </Target>
+
+  <Target Name="CopyExampleScriptsToSampleProject" BeforeTargets="Build" Inputs="@(ExampleFiles)" Outputs="@(ExampleFiles->'$(ProjectDir)\SampleProject\PondSharp.Examples\%(RecursiveDir)%(Filename)%(Extension)')">
+    <Message Text="Copying Example Files To Sample Project" Importance="high" />
     <Copy SourceFiles="@(ExampleFiles)" DestinationFiles="@(ExampleFiles->'$(ProjectDir)\SampleProject\PondSharp.Examples\%(RecursiveDir)%(Filename)%(Extension)')" />
   </Target>
-  
-  <Target Name="MakeSampleZip" BeforeTargets="Compile">
+
+  <Target Name="MakeSampleZip" BeforeTargets="Build;CopyExampleScriptsToSampleProject" Inputs="$(SolutionDir)UserScripts\bin\$(Configuration)\netstandard2.1\PondSharp.UserScripts.dll;$(SolutionDir)UserScripts\bin\$(Configuration)\PondSharp.UserScripts.xml;$(ProjectDir)SampleProject\**\*.*" Outputs="$(ProjectDir)wwwroot\sample-project.zip">
     <Message Text="Copying UserScripts DLL" Importance="high" />
     <Copy SourceFiles="$(SolutionDir)UserScripts\bin\$(Configuration)\netstandard2.1\PondSharp.UserScripts.dll;$(SolutionDir)UserScripts\bin\$(Configuration)\PondSharp.UserScripts.xml" DestinationFolder="SampleProject\PondSharp.Examples" />
     <Message Text="Creating Sample Project ZIP" Importance="high" />
-    <ZipDirectory DestinationFile="wwwroot\sample-project.zip" SourceDirectory="SampleProject" Overwrite="true" />
+    <ZipDirectory DestinationFile="$(ProjectDir)wwwroot\sample-project.zip" SourceDirectory="SampleProject" Overwrite="true" />
   </Target>
   
-  <Target Name="BuildWebAssets" BeforeTargets="PreBuildEvent" Condition="$(Configuration) == 'Release'">
+  <Target Name="BuildWebAssets" BeforeTargets="Build" Inputs="@(TypeScriptFiles)" Outputs="@(CompiledJavascriptFiles)">
     <Message Text="Running NPM Build" Importance="high" />
-    <Exec Command="npm run build:release" />
+    <Exec Command="npm run build:release" Condition="$(Configuration) == 'Release'" />
+    <Exec Command="npm run build:debug" Condition="$(Configuration) == 'Debug'" />
   </Target>
-  
-  <Target Name="CleanJSFiles" BeforeTargets="Clean">
-    <RemoveDir Directories="$(JSDirectory);$(USDirectory)" />
-    <Delete Files="$(ProjectDir)$(SampleProjectFile)">
-      <Output TaskParameter="DeletedFiles" ItemName="DeletedList"/>
-    </Delete>
-    <Message Text="Deleted files: '@(DeletedList)'"/>
+
+  <Target Name="CleanWeb" BeforeTargets="Clean">
+    <Message Text="Cleaning" />
+    <RemoveDir Directories="$(ProjectDir)wwwroot\js;$(ProjectDir)\wwwroot\user-scripts" />
+    <Delete Files="$(ProjectDir)wwwroot\sample-project.zip" />
   </Target>
 </Project>

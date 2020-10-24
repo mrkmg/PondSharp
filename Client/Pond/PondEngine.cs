@@ -5,7 +5,7 @@ using PondSharp.UserScripts;
 
 namespace PondSharp.Client.Pond
 {
-    public sealed class PondEngine : AbstractEngine
+    public sealed class PondEngine : Engine
     {
         private const int BlockSize = 30;
 

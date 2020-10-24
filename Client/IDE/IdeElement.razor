@@ -1,6 +1,7 @@
 @using System.Text
 @using PondSharp.UserScripts
 @using System.Reflection
+@using System.Net.Http.Headers
 <!-- ReSharper disable once InconsistentNaming -->
 @inject IJSRuntime JSRuntime
 @inject Blazored.LocalStorage.ILocalStorageService LocalStorage
@@ -89,6 +90,7 @@
         _sources.Clear();
         await LocalStorage.ClearAsync().ConfigureAwait(false);
         await ReadSources().ConfigureAwait(false);
+        await SelectSource("BaseEntity.cs", false).ConfigureAwait(false);
     }
 
     public IEnumerable<Type> GetTypesOf(Type type) =>
@@ -109,7 +111,7 @@
         var types = new List<Type>
         {
             typeof(object),
-            typeof(AbstractEntity),
+            typeof(Entity),
             typeof(System.Drawing.Color),
             typeof(Enumerable)
         };
@@ -233,8 +235,14 @@
         _sources.Clear();
         foreach (var sourceFile in sourceFiles)
         {
-            var code = await Http.GetStringAsync($"user-scripts/{sourceFile}.txt").ConfigureAwait(false);
-            _sources.Add(sourceFile, code);
+            var request = new HttpRequestMessage(HttpMethod.Get, Http.BaseAddress.AbsoluteUri + $"/user-scripts/{sourceFile}.txt")
+            {
+                Headers = { CacheControl = CacheControlHeaderValue.Parse("no-cache,max-age=0") },
+            };
+            var response = await Http.SendAsync(request).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode) throw new HttpRequestException("Failed to get sample source.");
+            var result = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            _sources.Add(sourceFile, result);
         }
     }
 

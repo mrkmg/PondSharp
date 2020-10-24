@@ -35,10 +35,11 @@ namespace PondSharp.Client.IDE
         {
             _assembly = null;
             var assemblyName = Path.GetRandomFileName();
-            var options = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp8);
+            var options = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest);
             
             var trees = sourceTexts.Select(st =>
                 CSharpSyntaxTree.ParseText(st.Value, options, st.Key));
+
             var compilation = CSharpCompilation.Create(
                 assemblyName,
                 trees,

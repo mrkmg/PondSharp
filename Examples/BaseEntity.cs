@@ -7,7 +7,7 @@ namespace PondSharp.Examples
     /// A base entity with some helper classes for the
     /// examples.
     /// </summary>
-    public abstract class BaseEntity : AbstractEntity
+    public abstract class BaseEntity : Entity
     {
         protected int ForceX;
         protected int ForceY;

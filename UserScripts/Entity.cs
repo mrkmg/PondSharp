@@ -6,7 +6,7 @@ namespace PondSharp.UserScripts
     /// <summary>
     /// Abstract entity class. All entities should extend this class to be properly loaded into the Pond.
     /// </summary>
-    public abstract class AbstractEntity : IEntity
+    public abstract class Entity : IEntity
     {
         private int _id;
         /// <inheritdoc />
@@ -94,7 +94,7 @@ namespace PondSharp.UserScripts
         
 #pragma warning disable 1591
         // ReSharper disable once MemberCanBePrivate.Global
-        protected bool Equals(AbstractEntity other)
+        protected bool Equals(Entity other)
         {
             return Id == other.Id;
         }
@@ -103,7 +103,7 @@ namespace PondSharp.UserScripts
         {
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
-            return obj.GetType() == GetType() && Equals((AbstractEntity) obj);
+            return obj.GetType() == GetType() && Equals((Entity) obj);
         }
 
         public override int GetHashCode()

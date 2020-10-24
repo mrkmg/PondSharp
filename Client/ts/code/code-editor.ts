@@ -7,16 +7,16 @@ export class CodeEditor {
         this.editor = editor.create(document.getElementById(elementId), {
             value: "",
             language: "csharp",
-            theme: 'vs-dark',
+            theme: "vs-dark",
             automaticLayout: true
         });
     }
     
-    public setCode(code: string) {
+    setCode(code: string) {
         this.editor.setValue(code);
     }
     
-    public getCode(): string {
+    getCode(): string {
         return this.editor.getValue();
     }
 }

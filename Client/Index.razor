@@ -106,8 +106,9 @@
 
     private PondEngine _engine;
     private PondManager _manager;
-#pragma warning disable 649
+    
     // Elements are assigned from blazor
+#pragma warning disable 649
     private IdeElement _ideElement;
     private PondCanvas _canvas;
 #pragma warning restore 649
@@ -186,7 +187,7 @@
     
     private void RealCreateEntity(string fullName)
     {
-        _manager.InitializeAndCreateEntity(_ideElement.CreateInstance<AbstractEntity>(fullName));
+        _manager.InitializeAndCreateEntity(_ideElement.CreateInstance<Entity>(fullName));
     }
 
     private Task GetExampleScripts() =>

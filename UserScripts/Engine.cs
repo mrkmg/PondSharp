@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace PondSharp.UserScripts
 {
 #pragma warning disable 1591
-    public abstract class AbstractEngine : IEngine
+    public abstract class Engine : IEngine
     {
         public int MinX { get; protected set; }
         public int MaxX { get; protected set; }
@@ -29,7 +29,7 @@ namespace PondSharp.UserScripts
         }
         protected void WriteEntityPosition(IEntity entity, int x, int y)
         {
-            if (!(entity is AbstractEntity aEntity)) return;
+            if (!(entity is Entity aEntity)) return;
             aEntity.X = x;
             aEntity.Y = y;
             OnEntityMoved(entity);
@@ -50,7 +50,7 @@ namespace PondSharp.UserScripts
 
         protected void WriteEntityColor(IEntity entity, int color)
         {
-            if (!(entity is AbstractEntity aEntity)) return;
+            if (!(entity is Entity aEntity)) return;
             aEntity.Color = color;
             OnEntityColorChanged(entity);
         }
@@ -72,7 +72,7 @@ namespace PondSharp.UserScripts
 
         private void WriteEntityViewDistance(IEntity entity, int distance)
         {
-            if (!(entity is AbstractEntity aEntity)) return;
+            if (!(entity is Entity aEntity)) return;
             aEntity.ViewDistance = distance;
             OnEntityViewDistanceChanged(entity);
         }

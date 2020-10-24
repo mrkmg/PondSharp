@@ -48,15 +48,6 @@
     <Content Remove="wwwroot\user-scripts\**" />
     <Content Remove="wwwroot\sample-project.zip" />
   </ItemGroup>
-
-  <ItemGroup>
-  </ItemGroup>
-
-  <PropertyGroup>
-    <JSDirectory>wwwroot\js</JSDirectory>
-    <USDirectory>wwwroot\user-scripts\</USDirectory>
-    <SampleProjectFile>wwwwroot\sample-project.zip</SampleProjectFile>
-  </PropertyGroup>
   
   <Target Name="CopyExampleScriptsToUserScripts" BeforeTargets="Build" Inputs="@(ExampleFiles)" Outputs="@(ExampleFiles->'$(ProjectDir)\wwwroot\user-scripts\%(RecursiveDir)%(Filename)%(Extension).txt')">
     <Message Text="Copying Example Files To User Scripts" Importance="high" />

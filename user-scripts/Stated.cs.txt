@@ -21,7 +21,7 @@ namespace PondSharp.Examples
     /// and setting destinations for all the followers
     /// in that group. 
     /// </summary>
-    public class Stated : AbstractEntity
+    public class Stated : Entity
     {
         private int DestinationX;
         private int DestinationY;

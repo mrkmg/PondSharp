@@ -6,7 +6,7 @@
   "linkerEnabled": false,
   "resources": {
     "assembly": {
-      "PondSharp.Client.dll": "sha256-XurKXmWDfP7tPL6b2hOQ13CSxdvXfanEphJXobhUcT0=",
+      "PondSharp.Client.dll": "sha256-sIj\/\/wXIDSLMQQSWT1Y\/APmJF4s7DaR8x9Okb+wdQ2c=",
       "Microsoft.Extensions.DependencyInjection.Abstractions.dll": "sha256-qHdxgeB0nKE8odGQX+eGQwM+lg3dEkT2XpjVyoAB9bE=",
       "netstandard.dll": "sha256-\/zcPVM75OAY+joGVM8yIC1gO1SFYWP1CFERgQ8PJkfA=",
       "System.Xml.Linq.dll": "sha256-IPbQMdJxZXdk8HTlaPyXdQ6Zb82iZLphnM74yO4EURQ=",
@@ -50,7 +50,7 @@
       "Microsoft.AspNetCore.Components.Forms.dll": "sha256-m7Q+cF5\/ji3OMfdGlCuE8pQ\/iM+kxNHLq\/IEWVvIaOg=",
       "Microsoft.AspNetCore.Components.dll": "sha256-PEg9ghiKSWBTX0jq8pFDvv2Yvw92Y8W0ELtWrSE4fhA=",
       "Microsoft.Extensions.Logging.Abstractions.dll": "sha256-PBU5INASuPqDlIS0ic0TMSDwIZQ6BIM6N0S0K5FhZHE=",
-      "PondSharp.UserScripts.dll": "sha256-vJhBPSqohaNvbOmQ5+a5H2N9SrRA4K\/\/2n2xoLj7iZo=",
+      "PondSharp.UserScripts.dll": "sha256-sZa37oF9yCh4JQIZkytqGdymt5BTWiZyduac2Qj2JFc=",
       "Blazored.LocalStorage.dll": "sha256-7+FtaZd2xSysaMLC59XhYdtkNMZ15ha0lk73dxPdT5w=",
       "Microsoft.Extensions.Options.dll": "sha256-cKAZb7xh11kZxyizcq+t1c8646D5ZoQNvEwOg3z+DX8=",
       "Microsoft.Extensions.Primitives.dll": "sha256-6eWNJmObgA9g37KbjpD+lhTy18eoW5cLdTcnDGGojBU=",

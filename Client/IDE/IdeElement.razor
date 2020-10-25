@@ -56,7 +56,7 @@
         }
     </div>
 }
-<div id="code-editor" class="w-auto" style="min-height: 500px; height: calc(100vh - 180px)"></div>
+<div id="code-editor" class="w-auto" style="min-height: 500px; height: calc(100vh - 250px)"></div>
 <div>PondSharp.UserScripts Version: <span>@UserScriptsVersion</span></div>
 
 @code {
@@ -68,6 +68,9 @@
     private string _editorPromptName = string.Empty;
     private string _renameScriptOriginalName = string.Empty;
     private string _editorPromptError = string.Empty;
+
+    [Parameter]
+    public EventCallback IsInitialized { get; set; }
     
     public Task TriggerSave() => SaveSource();
     public bool IsCompiled => _compiler?.HasAssembly ?? false;
@@ -206,7 +209,12 @@
         await JSRuntime.InvokeVoidAsync("createEditor", "code-editor", "codeEditor").ConfigureAwait(false);
         await ReadSources().ConfigureAwait(false);
         await SelectSource(_sources.First().Key).ConfigureAwait(false);
+        try
+        {
+            Compile();
+        } catch (CompileException){}
         StateHasChanged();
+        await IsInitialized.InvokeAsync(null).ConfigureAwait(false);
     }
 
     private async Task SaveSource()
@@ -225,12 +233,12 @@
     {
         var sourceFiles = new []
         {
-            "BaseEntity.cs",
-            "Rand.cs",
+            "Stated.cs",
             "Clustering.cs",
-            "Simple.cs",
             "Chase.cs",
-            "Stated.cs"
+            "Rand.cs",
+            "Simple.cs",
+            "BaseEntity.cs",
         };
         _sources.Clear();
         foreach (var sourceFile in sourceFiles)
@@ -247,7 +255,7 @@
     }
 
     private string SavedScriptsKey => $"saved_scripts:{UserScriptsVersion}";
-    private async Task ReadSources()
+    public async Task ReadSources()
     {
         var hasLocalScripts = await LocalStorage.ContainKeyAsync(SavedScriptsKey).ConfigureAwait(false);
         if (hasLocalScripts)

@@ -98,7 +98,7 @@ namespace PondSharp.Examples
             public List<Stated> Followers { get; } = new List<Stated>();
             public int StateColor = RandomColor();
             public bool IsFull => Followers.Count >= GroupSize;
-            private CurrentStateType CurrentState { get; set; } = CurrentStateType.Pending;
+            private CurrentStateType CurrentState { get; set; } = CurrentStateType.Waiting;
             private int CurrentCenterX;
             private int CurrentCenterY;
             private int CurrentDistance;

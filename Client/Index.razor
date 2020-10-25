@@ -12,30 +12,30 @@
         <Header></Header>
     </div>
     <div class="row">
-        <div class="col-auto" style="max-width: @(_pondWidth * _gridSize + 10)px">
+        <div class="col @(_display != DisplayType.Initializing ? "d-none" : "")">
+            <div class="jumbotron text-center">
+              <h1 class="display-4">Please Wait</h1>
+              <p class="lead">Initializing the compiler, and building intitial project.</p>
+              <hr class="my-4">
+              <p>This may take a few seconds, or much longer depending on the resources available.</p>
+            </div>
+        </div>
+        <div class="col @(_display != DisplayType.Pond ? "d-none" : "")">
             <PondCanvas @ref="_canvas" Width="@_pondWidth" Height="@_pondHeight" GridSize="@_gridSize"></PondCanvas>
             <div class="row">
                 <div class="col-auto">
                     <div class="btn-group bottom-tabs">
-                        <button class="btn btn-primary" @onclick="CompileSource">Compile</button>
                         <button class="btn btn-success" @onclick="StartPond" disabled="@(!_ideElement?.IsCompiled ?? IsRunning)">Start</button>
                         <button class="btn btn-warning" @onclick="StopPond" disabled="@(!IsRunning)">Stop</button>
-                        <button class="btn btn-danger" @onclick="Reset" disabled="@(!IsRunning)">Reset</button>
+                        <button class="btn btn-danger" @onclick="Reset" disabled="@(!_ideElement?.IsCompiled)">Reset</button>
                     </div>
                 </div>
-                <div class="col text-monospace">
-                    <span>@_output</span> | 
-                    <span>TPS: <span>@(Math.Ceiling(1000 / (_manager?.CurrentTickTime ?? 1)))</span></span>
-                </div>
-            </div>
-            <div class="row">
                 <div class="col">
                     @if (_availableEntityTypes.Any())
                     {
-                        <hr />
-                        <div class="input-group">
+                        <div class="input-group bottom-tabs">
                             <div class="input-group-prepend">
-                                <button class="btn btn-outline-primary" 
+                                <button class="btn btn-outline-primary"
                                         @onclick="@(e => CreateEntity(_selectedType))"
                                         disabled="@(!_ideElement.IsCompiled)">Create</button>
                             </div>
@@ -51,12 +51,26 @@
                             </div>
                         </div>
                     }
-                    <pre>@(EntityCountsByType)</pre>
+                </div>
+                <div class="col text-monospace text-center">
+                    <span>@_output</span> |
+                    <span>TPS: <span>@(Math.Ceiling(1000 / (_manager?.CurrentTickTime ?? 1)))</span></span>
+                </div>
+                <div class="col-auto">
+                    <div class="btn-group bottom-tabs">
+                        <button class="btn btn-primary" @onclick="() => _display = DisplayType.Ide">Edit Code</button>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col overflow-hidden">
-            <IdeElement @ref="_ideElement"></IdeElement>
+        <div class="col @(_display != DisplayType.Ide ? "d-none" : "")">
+            <IdeElement @ref="_ideElement" IsInitialized="@(() => IdeElementInitialized())"></IdeElement>
+            <div class="row">
+                <div class="col">
+                    <button class="btn btn-primary" @onclick="@CompileSource">Compile</button>
+                    <button class="btn btn-dark" @onclick="() => _display = DisplayType.Pond">Close</button>
+                </div>
+            </div>
             @if (_errors.Count > 0)
             {
                 <div class="bg-warning">
@@ -78,6 +92,9 @@
 
 @code
 {
+    private enum DisplayType {Initializing, Pond, Ide}
+
+    private DisplayType _display = DisplayType.Initializing;
     private string _output = "No Instance Loaded";
     private IList<string> _errors = new List<string>();
     private string _selectedType = string.Empty;
@@ -128,7 +145,7 @@
         var size = ((IJSInProcessRuntime)JsRuntime).Invoke<int[]>("getSize");
         if (size.Length == 2)
         {
-            _pondWidth = size[0] > 1200 ? size[0] / 2 / _gridSize : (size[0] - 100) / _gridSize;
+            _pondWidth = (size[0] - 95) / _gridSize;
             _pondHeight = (size[1] - 250) / _gridSize;
         }
 
@@ -143,6 +160,17 @@
         TryCreatePondManager();
         if (_ideElement.IsCompiled)
             await ReadAssemblyInfo();
+    }
+
+    private async Task IdeElementInitialized()
+    {
+        _display = DisplayType.Pond;
+        await ReadAssemblyInfo().ConfigureAwait(false);
+        await StartPond().ConfigureAwait(false);
+        if (_ideElement.IsCompiled && _selectedType != null)
+        {
+            await CreateEntity(_selectedType).ConfigureAwait(false);
+        }
     }
 
     private async Task ReadAssemblyInfo()
@@ -163,18 +191,25 @@
         
         _countToCreate.Clear();
         foreach (var (fullName, _) in _availableEntityTypes)
+            _countToCreate.Add(fullName, fullName switch {
+                "PondSharp.Examples.Stated" => 1000,
+                "PondSharp.Examples.Chase" => 100,
+                "PondSharp.Examples.Clustering" => 200,
+                "PondSharp.Examples.Simple" => 2000,
+                "PondSharp.Examples.Rand" => 500,
+                _ => 100
+            });
+        
+        foreach (var (fullName, _) in _availableEntityTypes)
             if (await LocalStorage.ContainKeyAsync($"ec-{fullName}").ConfigureAwait(false))
-                _countToCreate.Add(fullName, await LocalStorage.GetItemAsync<int>($"ec-{fullName}").ConfigureAwait(false));
-            else
-                _countToCreate.Add(fullName, 100);
+                _countToCreate[fullName] = await LocalStorage.GetItemAsync<int>($"ec-{fullName}").ConfigureAwait(false);
     }
 
     private void TryCreatePondManager()
     {
-        if (_manager == null && _engine != null && _canvas != null)
-        {
-            _manager = new PondManager(_engine, _canvas);
-        }
+        if (_manager != null || _engine == null || _canvas == null) return;
+        
+        _manager = new PondManager(_engine, _canvas);
     }
 
     private async Task CreateEntity(string fullName)
@@ -207,6 +242,7 @@
             _ideElement.Compile();
             await ReadAssemblyInfo().ConfigureAwait(false);
             await StartPond().ConfigureAwait(false);
+            _display = DisplayType.Pond;
             StateHasChanged();
         }
         catch (CompileException e)

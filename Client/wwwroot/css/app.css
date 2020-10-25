@@ -94,9 +94,13 @@ app {
 .btn-group.top-tabs .btn:last-child {
     border-bottom-right-radius: 0;
 }
-.btn-group.bottom-tabs .btn:first-child {
+.btn-group.bottom-tabs .btn:first-child,
+.input-group.bottom-tabs > *:first-child,
+.input-group.bottom-tabs .btn {
     border-top-left-radius: 0;
 }
-.btn-group.bottom-tabs .btn:last-child {
+.btn-group.bottom-tabs .btn:last-child,
+.input-group.bottom-tabs > *:last-child,
+.input-group.bottom-tabs .btn {
     border-top-right-radius: 0;
 }

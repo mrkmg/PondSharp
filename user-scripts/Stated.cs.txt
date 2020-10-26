@@ -23,9 +23,12 @@ namespace PondSharp.Examples
     /// </summary>
     public class Stated : Entity
     {
+        private static readonly Random Random = new Random();
         private int DestinationX;
         private int DestinationY;
         private State MyState;
+        private int StuckCounter = 10;
+        private bool DidInititalMove = false;
 
         private static List<State> States = new List<State>();
 
@@ -74,12 +77,23 @@ namespace PondSharp.Examples
             var (x, y) = ((double)DestinationX - X, (double)DestinationY - Y);
             var dM = Math.Max(Math.Abs(x), Math.Abs(y));
             var (fx, fy) = dM == 0 ? (0, 0) : ((int)Math.Round(x / dM), (int)Math.Round(y / dM));
-            MoveTo(X + fx, Y + fy);
+            if (!MoveTo(X + fx, Y + fy)) {
+                if (DidInititalMove) {
+                    if (--StuckCounter <= 0) {
+                        DestinationX = X;
+                        DestinationY = Y;
+                        return;
+                    }
+                }
+                if(MoveTo(X +Random.Next(-1, 2), Y + Random.Next(-1, 2)))
+                    DidInititalMove = true;
+            } else {
+                DidInititalMove = true;
+            }
         }
 
         private class State
         {
-            private static readonly Random Random = new Random();
             private static (int, int) RandomPointOnCircle(int x, int y, int dist, double? angle = null)
             {
                 if (angle == null) angle = 2.0 * 3.1415 * Random.NextDouble();
@@ -119,11 +133,15 @@ namespace PondSharp.Examples
                         CurrentCenterY = Random.Next(Leader.WorldMinY + CurrentDistance + 1, Leader.WorldMaxY - CurrentDistance - 1);
                         Leader.DestinationX = CurrentCenterX;
                         Leader.DestinationY = CurrentCenterY;
+                        Leader.StuckCounter = 100;
+                        Leader.DidInititalMove = false;
 
                         foreach (var follower in Followers)
                         {
                             follower.DestinationX = CurrentCenterX;
                             follower.DestinationY = CurrentCenterY;
+                            follower.StuckCounter = 100;
+                            follower.DidInititalMove = false;
                         }
 
                         CurrentState = CurrentStateType.Joining;
@@ -142,6 +160,8 @@ namespace PondSharp.Examples
                                 CurrentDistance,
                                 angle
                             );
+                            follower.StuckCounter = 10;
+                            follower.DidInititalMove = false;
                         }
                         CurrentState = CurrentStateType.Exploding;
                             
@@ -158,10 +178,14 @@ namespace PondSharp.Examples
                         
                         Leader.DestinationX = 0;
                         Leader.DestinationY = 0;
+                        Leader.StuckCounter = 50;
+                        Leader.DidInititalMove = false;
                         foreach (var follower in Followers)
                         {
                             follower.DestinationX = 0;
                             follower.DestinationY = 0;
+                            follower.StuckCounter = 50;
+                            follower.DidInititalMove = false;
                         }
 
                         CurrentState = CurrentStateType.Separating;

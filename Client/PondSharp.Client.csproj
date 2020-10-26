@@ -44,9 +44,6 @@
     <EmbeddedResource Remove="wwwroot\js\**" />
     <EmbeddedResource Remove="wwwroot\user-scripts\**" />
     <Content Remove="SampleProject\**" />
-    <Content Remove="wwwroot\js\**" />
-    <Content Remove="wwwroot\user-scripts\**" />
-    <Content Remove="wwwroot\sample-project.zip" />
   </ItemGroup>
   
   <Target Name="CopyExampleScriptsToUserScripts" BeforeTargets="BeforeBuild" Inputs="@(ExampleFiles)" Outputs="@(ExampleFiles->'$(ProjectDir)\wwwroot\user-scripts\%(RecursiveDir)%(Filename)%(Extension).txt')">

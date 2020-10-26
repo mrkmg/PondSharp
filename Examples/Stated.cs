@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using PondSharp.UserScripts;
 
@@ -26,14 +27,16 @@ namespace PondSharp.Examples
         private static readonly Random Random = new Random();
         private int DestinationX;
         private int DestinationY;
+        private int NoStuckDistance;
+        private int StuckCounter;
         private State MyState;
-        private int StuckCounter = 10;
-        private bool DidInititalMove = false;
 
         private static List<State> States = new List<State>();
 
         public override void OnCreated()
         {
+            StuckCounter = 10;
+            NoStuckDistance = 0;
             if (States.Count == 0 || States.All(s => s.IsFull))
             {
                 MyState = new State {Leader = this};
@@ -44,6 +47,7 @@ namespace PondSharp.Examples
                 MyState = States.First(s => !s.IsFull);
                 MyState.Followers.Add(this);
             }
+
 
             ChangeColor(MyState.StateColor);
         }
@@ -75,21 +79,25 @@ namespace PondSharp.Examples
             if (X == DestinationX && Y == DestinationY) return;
 
             var (x, y) = ((double)DestinationX - X, (double)DestinationY - Y);
-            var dM = Math.Max(Math.Abs(x), Math.Abs(y));
+            var dM = Math.Sqrt(Math.Pow(x, 2) + Math.Pow(y, 2));
             var (fx, fy) = dM == 0 ? (0, 0) : ((int)Math.Round(x / dM), (int)Math.Round(y / dM));
-            if (!MoveTo(X + fx, Y + fy)) {
-                if (DidInititalMove) {
-                    if (--StuckCounter <= 0) {
-                        DestinationX = X;
-                        DestinationY = Y;
-                        return;
-                    }
-                }
-                if(MoveTo(X +Random.Next(-1, 2), Y + Random.Next(-1, 2)))
-                    DidInititalMove = true;
-            } else {
-                DidInititalMove = true;
+            if (MoveTo(X + fx, Y + fy)) return;
+            
+            if (dM <= NoStuckDistance && --StuckCounter <= 0) {
+                DestinationX = X;
+                DestinationY = Y;
+                return;
             }
+            
+            MoveTo(X +Random.Next(-1, 2), Y + Random.Next(-1, 2));
+        }
+
+        private void SetMovePoint(int x, int y, int dist, int maxStuckness = 10)
+        {
+            DestinationX = x;
+            DestinationY = y;
+            NoStuckDistance = dist;
+            StuckCounter = maxStuckness;
         }
 
         private class State
@@ -129,19 +137,19 @@ namespace PondSharp.Examples
                     case CurrentStateType.Pending:
                     {if (States.Any(s => s.CurrentState == CurrentStateType.Separating)) break;
                         CurrentDistance = 5 + Random.Next(20);
-                        CurrentCenterX = Random.Next(Leader.WorldMinX + CurrentDistance + 1, Leader.WorldMaxX - CurrentDistance - 1);
-                        CurrentCenterY = Random.Next(Leader.WorldMinY + CurrentDistance + 1, Leader.WorldMaxY - CurrentDistance - 1);
-                        Leader.DestinationX = CurrentCenterX;
-                        Leader.DestinationY = CurrentCenterY;
-                        Leader.StuckCounter = 100;
-                        Leader.DidInititalMove = false;
+                        do
+                        {
+                            CurrentCenterX = Random.Next(Leader.WorldMinX + CurrentDistance + 1,
+                                Leader.WorldMaxX - CurrentDistance - 1);
+                            CurrentCenterY = Random.Next(Leader.WorldMinY + CurrentDistance + 1,
+                                Leader.WorldMaxY - CurrentDistance - 1);
+                        } while (Math.Min(Math.Abs(CurrentCenterX), Math.Abs(CurrentCenterY)) < 20);
+                        
+                        Leader.SetMovePoint(CurrentCenterX, CurrentCenterY, Followers.Count, 10);
 
                         foreach (var follower in Followers)
                         {
-                            follower.DestinationX = CurrentCenterX;
-                            follower.DestinationY = CurrentCenterY;
-                            follower.StuckCounter = 100;
-                            follower.DidInititalMove = false;
+                            follower.SetMovePoint(CurrentCenterX, CurrentCenterY, Followers.Count, 10);
                         }
 
                         CurrentState = CurrentStateType.Joining;
@@ -149,19 +157,20 @@ namespace PondSharp.Examples
                     }
                     case CurrentStateType.Joining:
                         if (!DestinationsFulfilled) break;
+                            
+                        Leader.SetMovePoint(CurrentCenterX, CurrentCenterY, 20);
                         
                         var i = 0;
                         foreach (var follower in Followers)
                         {
                             var angle = 2.0 * 3.1415 * ( i++ / (double) Followers.Count );
-                            (follower.DestinationX, follower.DestinationY) = RandomPointOnCircle(
+                            var (x, y) = RandomPointOnCircle(
                                 CurrentCenterX, 
                                 CurrentCenterY, 
                                 CurrentDistance,
                                 angle
                             );
-                            follower.StuckCounter = 10;
-                            follower.DidInititalMove = false;
+                            follower.SetMovePoint(x, y, 20);
                         }
                         CurrentState = CurrentStateType.Exploding;
                             
@@ -171,21 +180,14 @@ namespace PondSharp.Examples
                         {
                             CurrentState = CurrentStateType.Waiting;
                         }
-
                         break;
                     case CurrentStateType.Waiting:
                         if (States.Any(s => s.CurrentState == CurrentStateType.Exploding || s.CurrentState == CurrentStateType.Joining)) break;
-                        
-                        Leader.DestinationX = 0;
-                        Leader.DestinationY = 0;
-                        Leader.StuckCounter = 50;
-                        Leader.DidInititalMove = false;
+
+                        Leader.SetMovePoint(0, 0, 30, 50);
                         foreach (var follower in Followers)
                         {
-                            follower.DestinationX = 0;
-                            follower.DestinationY = 0;
-                            follower.StuckCounter = 50;
-                            follower.DidInititalMove = false;
+                            follower.SetMovePoint(0, 0, 30, 50);
                         }
 
                         CurrentState = CurrentStateType.Separating;

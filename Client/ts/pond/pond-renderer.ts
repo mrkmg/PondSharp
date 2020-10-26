@@ -105,6 +105,8 @@ export class PondRenderer {
                     const color = win.Blazor.platform.readInt32Field(entryPtr, 8);
                     this.changeEntityColor(id, color);
                     break;
+                case 0: // None, no more updates in this memory
+                    return true;
                 default:
                     throw new Error("unknown type");
             }

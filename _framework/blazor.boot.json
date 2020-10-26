@@ -6,7 +6,7 @@
   "linkerEnabled": false,
   "resources": {
     "assembly": {
-      "PondSharp.Client.dll": "sha256-TXPHZHUZNehy3HTSKtr+WWIphiRidzn2HYFj8VH3ypM=",
+      "PondSharp.Client.dll": "sha256-PjXU\/wON2gjoKht\/nkUhDLp2W3jA6XbnxuhnPqfjBRY=",
       "Microsoft.Extensions.DependencyInjection.Abstractions.dll": "sha256-qHdxgeB0nKE8odGQX+eGQwM+lg3dEkT2XpjVyoAB9bE=",
       "netstandard.dll": "sha256-\/zcPVM75OAY+joGVM8yIC1gO1SFYWP1CFERgQ8PJkfA=",
       "System.Xml.Linq.dll": "sha256-IPbQMdJxZXdk8HTlaPyXdQ6Zb82iZLphnM74yO4EURQ=",

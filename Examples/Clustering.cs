@@ -53,7 +53,7 @@ namespace PondSharp.Examples
             }
 
             var entities = VisibleEntities.ToList();
-            if (CheckFlee(entities)) return;
+            //if (CheckFlee(entities)) return;
                 
             ChooseForceDirections(entities);
 
@@ -61,7 +61,7 @@ namespace PondSharp.Examples
             
             ChangeColor(WanderingColor);
             ChooseRandomDirection();
-            ThinkCooldown = RndThinkDelay(200, 5, 100);
+            ThinkCooldown = RndThinkDelay(200, 2, 100);
         }
 
         private bool CheckFlee(IList<IEntity> entities)
@@ -92,13 +92,13 @@ namespace PondSharp.Examples
             var (groupCenterX, groupCenterY) = (tx / entities.Count, ty / entities.Count);
             var distanceToCenter = Dist(X, Y, groupCenterX, groupCenterY);
             
-            if (entities.Count > 15)
+            if (entities.Count > 10)
             {
                 ChangeColor(SeparatingColor);
                 // Move away from group center
                 (ForceX, ForceY) = GetForceDirection(X - groupCenterX, Y - groupCenterY);
                 ThinkCooldown = RndThinkDelay(entities.Count);
-            } else if (distanceToCenter > 5)
+            } else if (distanceToCenter > 10)
             {
                 ChangeColor(JoiningColor);
                 // Move toward group center

@@ -47,7 +47,7 @@ namespace PondSharp.Client.Pond
             catch (Exception e)
             {
                 _pondCanvas.ClearChangeQueue();
-                Console.WriteLine($"Tick Exception: ${e.Message}");
+                Console.WriteLine($"Tick Exception: ${e.Message} ${e.StackTrace}");
                 Stop().RunSynchronously();
             }
 

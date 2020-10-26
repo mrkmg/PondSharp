@@ -12,14 +12,20 @@ namespace PondSharp.Client.Pond
         public PondEngine(int width, int height)
         {
             _blockWidth = (int) Math.Ceiling((double)width / BlockSize);
-            ResetSize(-width / 2, width / 2, -height / 2 - 1, height / 2 - 1);
+            MinX = -width / 2;
+            MaxX = width / 2;
+            MinY = -height / 2 - 1;
+            MaxY = height / 2 - 1;
+            ResetSize();
         }
         
         private readonly int _blockWidth;
-        private LinkedList<IEntity>[] _entitiesByBlock = { };
+        private List<IEntity>[] _entitiesByBlock = { };
         private readonly Dictionary<int, IEntity> _entitiesById = new Dictionary<int, IEntity>();
+        private List<IEntity>[][] _entitiesByPosition = { };
+        private List<IEntity> _entities = new List<IEntity>();
         
-        public override IEnumerable<IEntity> Entities => _entitiesById.Values;
+        public override IEnumerable<IEntity> Entities => _entities;
         public override IEntity GetEntity(int entityId) => _entitiesById[entityId];
         
         private static int Dist(int x1, int y1, int x2, int y2) =>
@@ -28,17 +34,26 @@ namespace PondSharp.Client.Pond
         private int GetBlock(IEntity e) => GetBlock(e.X, e.Y);
         private int GetBlock(int x, int y) => (x - MinX) / BlockSize + (y - MinY) / BlockSize * (_blockWidth);
         
-        private void ResetSize(int minX, int maxX, int minY, int maxY)
+        private void ResetSize()
         {
-            MinX = minX;
-            MaxX = maxX;
-            MinY = minY;
-            MaxY = maxY;
-            _entitiesByBlock = new LinkedList<IEntity>[GetBlock(MaxX, MaxY) + 1];
+            _entitiesByBlock = new List<IEntity>[GetBlock(MaxX, MaxY) + 1];
             for (var i = 0; i < _entitiesByBlock.Length; i++) 
-                _entitiesByBlock[i] = new LinkedList<IEntity>();
-            foreach (var entity in _entitiesById.Values)
-                _entitiesByBlock[GetBlock(entity)].AddLast(entity);
+                _entitiesByBlock[i] = new List<IEntity>();
+            
+            _entitiesByPosition = new List<IEntity>[MaxX - MinX + 1][];
+            for (var x = 0; x <= MaxX - MinX; x++)
+            {
+                _entitiesByPosition[x] = new List<IEntity>[MaxY - MinY + 1];
+                for (var y = 0; y <= MaxY - MinY; y++)
+                    _entitiesByPosition[x][y] = new List<IEntity>();
+                
+            }
+
+            foreach (var entity in _entities)
+            {
+                _entitiesByBlock[GetBlock(entity)].Add(entity);
+                _entitiesByPosition[entity.X - MinX][entity.Y - MinY].Add(entity);
+            }
         }
 
         private IEnumerable<IEntity> GetEntitiesAround(int centerX, int centerY, int dist)
@@ -53,28 +68,34 @@ namespace PondSharp.Client.Pond
         public override bool CanMoveTo(IEntity entity, int x, int y)
         {
             return Math.Abs(entity.X - x + entity.Y - y) <= 2 &&
-                   x >= MinX && x <= MaxX &&
-                   y >= MinY && y <= MaxY;
+                   x >= MinX && x < MaxX &&
+                   y >= MinY && y < MaxY && 
+                   _entitiesByPosition[x - MinX][y - MinY].Count == 0;
         }
 
         public void InsertEntity(IEntity entity)
         {
             _entitiesById.Add(entity.Id, entity);
-            _entitiesByBlock[GetBlock(entity)].AddLast(entity);
+            _entitiesByBlock[GetBlock(entity)].Add(entity);
+            _entitiesByPosition[entity.X - MinX][entity.Y - MinY].Add(entity);
+            _entities.Add(entity);
             OnEntityAdded(entity);
         }
         
         public override bool MoveTo(IEntity entity, int x, int y)
         {
-            if (!CanMoveTo(entity, x, y)) return false;
             if (entity.X == x && entity.Y == y) return true;
+            if (!CanMoveTo(entity, x, y)) return false;
+            
+            _entitiesByPosition[entity.X - MinX][entity.Y - MinY].Remove(entity);
+            _entitiesByPosition[x - MinX][y - MinY].Add(entity);
             
             var oldBlock = GetBlock(entity);
             var newBlock = GetBlock(x, y);
             if (oldBlock != newBlock)
             {
                 _entitiesByBlock[oldBlock].Remove(entity);
-                _entitiesByBlock[newBlock].AddLast(entity);
+                _entitiesByBlock[newBlock].Add(entity);
             }
             WriteEntityPosition(entity, x, y);
             return true;
@@ -88,17 +109,25 @@ namespace PondSharp.Client.Pond
             var entity = _entitiesById[entityId];
             entity.OnDestroy();
             _entitiesByBlock[GetBlock(entity)].Remove(entity);
+            _entitiesByPosition[entity.X - MinX][entity.Y - MinY].Remove(entity);
+            _entities.Remove(entity);
             return _entitiesById.Remove(entityId);
         }
 
         public void ClearAllEntities()
         {
+            _entities.Clear();
             foreach (var entity in _entitiesById.Values)
             {
                 entity.OnDestroy();
             }
             _entitiesById.Clear();
+            
             foreach (var entities in _entitiesByBlock)
+                entities.Clear();
+            
+            foreach (var ex in _entitiesByPosition)
+            foreach (var entities in ex)
                 entities.Clear();
         }
     }

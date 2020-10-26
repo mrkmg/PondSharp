@@ -149,7 +149,7 @@
             _pondHeight = (size[1] - 250) / _gridSize;
         }
 
-        _engine = new PondEngine(-_pondWidth/2, _pondWidth/2-1, -_pondHeight/2, _pondHeight/2-1);
+        _engine = new PondEngine(_pondWidth, _pondHeight);
         TryCreatePondManager();
     }
     

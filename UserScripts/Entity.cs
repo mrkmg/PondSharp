@@ -20,7 +20,7 @@ namespace PondSharp.UserScripts
             }
         }
         
-        private IEngine Engine { get; set; }
+        private Engine Engine { get; set; }
 
         /// <inheritdoc />
         public int X { get; internal set; }
@@ -48,8 +48,17 @@ namespace PondSharp.UserScripts
 
         private bool _intialized;
 
-        /// <inheritdoc />
-        public virtual void Initialize(int id, IEngine engine, int x = 0, int y = 0, int color = 0xFFFFFF, int viewDistance = 0)
+        /// <summary>
+        /// Initialize Entity
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="engine"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="color"></param>
+        /// <param name="viewDistance"></param>
+        /// <exception cref="AlreadyInitializedException"></exception>
+        internal void Initialize(int id, Engine engine, int x = 0, int y = 0, int color = 0xFFFFFF, int viewDistance = 0)
         {
             if (_intialized) throw new AlreadyInitializedException();
             Id = id;
@@ -61,35 +70,77 @@ namespace PondSharp.UserScripts
             ViewDistance = viewDistance;
         }
 
-        /// <inheritdoc />
-        public bool CanMoveTo(int x, int y) => Engine.CanMoveTo(this, x, y);
+        /// <summary>
+        /// Checks if the entity can move to a World Position
+        /// </summary>
+        /// <param name="x">World X Position</param>
+        /// <param name="y">World Y Position</param>
+        /// <returns>If the entity can move to the World Position</returns>
+        protected bool CanMoveTo(int x, int y) => Engine.CanMoveTo(this, x, y);
 
-        /// <inheritdoc />
-        public bool MoveTo(int x, int y) => Engine.MoveTo(this, x, y);
+        /// <summary>
+        /// Tries to move the entity to the World Position
+        /// </summary>
+        /// <param name="x">World X Position</param>
+        /// <param name="y">World Y Position</param>
+        /// <returns>If the entity moved to the World Position</returns>
+        protected bool MoveTo(int x, int y) => Engine.MoveTo(this, x, y);
 
-        /// <inheritdoc />
-        public bool CanChangeColorTo(int color) => Engine.CanChangeColorTo(this, color);
+        /// <summary>
+        /// Checks if entity can change its color to the specified color.
+        /// </summary>
+        /// <param name="color">Desired Color</param>
+        /// <returns>If the entity can change its color to the specified color.</returns>
+        protected bool CanChangeColorTo(int color) => Engine.CanChangeColorTo(this, color);
 
-        /// <inheritdoc />
-        public bool ChangeColor(int color) => Engine.ChangeColorTo(this, color);
+        /// <summary>
+        /// Tries to change the entity's color to the specified color.
+        /// </summary>
+        /// <param name="color">Desired Color</param>
+        /// <returns>If the entity's color was changed to the specified color.</returns>
+        protected bool ChangeColor(int color) => Engine.ChangeColorTo(this, color);
 
-        /// <inheritdoc />
-        public bool CanChangeViewDistance(int distance) => Engine.CanChangeViewDistance(this, distance);
+        /// <summary>
+        /// Checks if entity can changes its view distance to the specified distance.
+        /// </summary>
+        /// <param name="distance">Distance that visible entities will use.</param>
+        /// <returns>If the entity can change its view distance to the specified distance.</returns>
+        /// 
+        protected bool CanChangeViewDistance(int distance) => Engine.CanChangeViewDistance(this, distance);
 
-        /// <inheritdoc />
-        public bool ChangeViewDistance(int distance) => Engine.ChangeViewDistance(this, distance);
+        /// <summary>
+        /// Tries to change the entity's view distance to the specified distance.
+        /// </summary>
+        /// <param name="distance">Distance that visible entities will use.</param>
+        /// <returns>If the entity's view distance was change the specified distance.</returns>
+        protected bool ChangeViewDistance(int distance) => Engine.ChangeViewDistance(this, distance);
 
-        /// <inheritdoc />
-        public IEnumerable<IEntity> VisibleEntities => Engine.GetVisibleEntities(this);
+        /// <summary>
+        /// Entities which are within the ViewDistance
+        /// </summary>
+        /// <see cref="ViewDistance"/>
+        protected IEnumerable<IEntity> VisibleEntities => Engine.GetVisibleEntities(this);
 
-        /// <inheritdoc />
-        public virtual void OnCreated() {}
+        /// <summary>
+        /// Called immediately after the Entity is created and loaded into the world.
+        ///
+        /// Useful for initialization tasks.
+        /// </summary>
+        protected virtual void OnCreated(){}
+        
+        /// <summary>
+        /// Called before the Entity is destroyed and removed from the world.
+        /// </summary>
+        protected virtual void OnDestroy(){}
+        
+        /// <summary>
+        /// Called on every tick.
+        /// </summary>
+        protected virtual void Tick(){}
 
-        /// <inheritdoc />
-        public virtual void OnDestroy() {}
-
-        /// <inheritdoc />
-        public abstract void Tick();
+        internal void WasCreated() => OnCreated();
+        internal void WasDestroyed() => OnDestroy();
+        internal void DoTick() => Tick();
         
         
 #pragma warning disable 1591
@@ -112,4 +163,11 @@ namespace PondSharp.UserScripts
         }
     }
 #pragma warning restore 1591
+
+    /// <summary>
+    /// Entity is already intialized.
+    /// </summary>
+    public class AlreadyInitializedException : InvalidOperationException
+    {
+    }
 }

@@ -70,18 +70,21 @@ export class PondRenderer {
     }
     
     destroyEntity(id: number) {
+        if (!this.entities[id]) return;
         this.entities[id].destroy();
         this.entities[id] = null;
         delete this.entities[id];
     }
     
     moveEntity(id: number, x: number, y: number) {
+        if (!this.entities[id]) return;
         const container = this.entities[id];
         container.position.x = x * this.gridSize;
         container.position.y = y * this.gridSize;
     }
     
     changeEntityColor(id: number, color: number) {
+        if (!this.entities[id]) return;
         const graphic = this.entities[id] as PIXI.Graphics;
         graphic.clear();
         graphic.beginFill(color);
@@ -94,6 +97,7 @@ export class PondRenderer {
         for (let i = 0; i < length; i++) {
             const entryPtr = win.Blazor.platform.getArrayEntryPtr(pointer, i, 16);
             const id = win.Blazor.platform.readInt32Field(entryPtr, 0);
+            if (!this.entities[id]) continue;
             const type = win.Blazor.platform.readInt32Field(entryPtr, 4);
             switch (type) {
                 case 1:

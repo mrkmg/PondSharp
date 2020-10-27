@@ -61,7 +61,7 @@
         changeReq.EntityId = entityId;
         changeReq.Type = EntityChangeRequestType.Color;
         changeReq.Color = color;
-        if (CurrentChangeRequestsCount == QueueLength - 1)
+        if (CurrentChangeRequestsCount == QueueLength)
             FlushChangeQueue();
     }
 
@@ -73,6 +73,8 @@
 
     public void ClearChangeQueue()
     {
+        Console.WriteLine(_entityChangeRequests.Length);
+        Console.WriteLine(_currentChangeRequestIndex);
         for (var i = 0; i <= _currentChangeRequestIndex; i++) _entityChangeRequests[i].Type = EntityChangeRequestType.None;
         _currentChangeRequestIndex = -1;
     }

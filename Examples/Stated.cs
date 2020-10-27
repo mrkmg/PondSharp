@@ -33,7 +33,7 @@ namespace PondSharp.Examples
         private static List<State> States = new List<State>();
         private static int TotalEntities => States.Sum(s => s.Followers.Count + 1);
 
-        public override void OnCreated()
+        protected override void OnCreated()
         {
             StuckCounter = 10;
             DestinationX = X;
@@ -57,7 +57,7 @@ namespace PondSharp.Examples
             ChangeColor(MyState.StateColor);
         }
 
-        public override void OnDestroy()
+        protected override void OnDestroy()
         {
             if (MyState == null || MyState.Leader.Id != Id) return;
             
@@ -70,7 +70,7 @@ namespace PondSharp.Examples
             States.Remove(MyState);
         }
 
-        public override void Tick()
+        protected override void Tick()
         {
             if (MyState == null)
             {

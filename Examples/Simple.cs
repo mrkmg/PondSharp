@@ -5,7 +5,7 @@ namespace PondSharp.Examples
     /// </summary>
     public class Simple : BaseEntity
     {
-        public override void OnCreated()
+        protected override void OnCreated()
         {
             if (Random.Next(2) == 0)
                 ForceX = Random.Next(2) == 0 ? 1 : -1;
@@ -13,7 +13,7 @@ namespace PondSharp.Examples
                 ForceY = Random.Next(2) == 0 ? 1 : -1;
         }
         
-        public override void Tick()
+        protected override void Tick()
         {
             if (!MoveTo(X + ForceX, Y + ForceY))
             {

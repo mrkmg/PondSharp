@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace PondSharp.UserScripts
 {
 #pragma warning disable 1591
-    public abstract class Engine : IEngine
+    public abstract class Engine
     {
         public int MinX { get; protected set; }
         public int MaxX { get; protected set; }
@@ -15,9 +15,15 @@ namespace PondSharp.UserScripts
         public abstract IEntity GetEntity(int entityId);
         public abstract IEntity GetEntityAt(int x, int y);
 
-        public IEnumerable<IEntity> GetVisibleEntities(int entityId) => GetVisibleEntities(GetEntity(entityId));
         public abstract IEnumerable<IEntity> GetVisibleEntities(IEntity entity);
 
+        protected void DoTick(Entity e) => e.DoTick();
+        protected void WasCreated(Entity e) => e.WasCreated();
+        protected void WasDestroyed(Entity e) => e.WasDestroyed();
+        protected void IntitializeEntity(Entity e, int id, int x = 0, int y = 0, int color = 0xFFFFFF,
+            int viewDistance = 0) =>
+            e.Initialize(id, this, x, y, color, viewDistance);
+        
         #region Movement
         
         public virtual bool CanMoveTo(IEntity entity, int x, int y) => true;

@@ -40,14 +40,13 @@ namespace PondSharp.Client.Pond
             CurrentTickTime = diff * 0.99 + CurrentTickTime * 0.01;
             try
             {
-                foreach (var entity in _pondEngine.Entities)
-                    entity.Tick();
+                _pondEngine.Tick();
                 _pondCanvas.FlushChangeQueue();
             }
             catch (Exception e)
             {
-                _pondCanvas.ClearChangeQueue();
                 Console.WriteLine($"Tick Exception: ${e.Message} ${e.StackTrace}");
+                _pondCanvas.ClearChangeQueue();
                 Stop().RunSynchronously();
             }
 
@@ -56,7 +55,6 @@ namespace PondSharp.Client.Pond
         private void EngineOnEntityAdded(object sender, IEntity e)
         {
             _pondCanvas.CreateEntity(e.Id, e.X, e.Y, e.Color);
-            e.OnCreated();
         }
 
         private void EngineOnEntityMoved(object sender, (int, int) position)
@@ -85,7 +83,7 @@ namespace PondSharp.Client.Pond
             await _pondCanvas.Stop().ConfigureAwait(false);
         }
 
-        public void InitializeAndCreateEntity(IEntity entity)
+        public void InitializeAndCreateEntity(Entity entity)
         {
             int ColorRnd(int min) => _random.Next(min) + (0xFF - min);
             int xPos;
@@ -95,13 +93,7 @@ namespace PondSharp.Client.Pond
                 xPos = _random.Next(-_pondCanvas.Width / 2, _pondCanvas.Width / 2 - 1);
                 yPos = _random.Next(-_pondCanvas.Height / 2, _pondCanvas.Height / 2 - 1);
             } while (_pondEngine.GetEntityAt(xPos, yPos) != null);
-            entity.Initialize(
-                _nextId++,
-                _pondEngine,
-                xPos, 
-                yPos,
-                Color.FromArgb(ColorRnd(0x66), ColorRnd(0x66), ColorRnd(0x66)).ToArgb());
-            _pondEngine.InsertEntity(entity);
+            _pondEngine.InsertEntity(entity, _nextId++, xPos, yPos, Color.FromArgb(ColorRnd(0x66), ColorRnd(0x66), ColorRnd(0x66)).ToArgb());
         }
 
         public void Reset()

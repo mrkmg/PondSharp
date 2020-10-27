@@ -5,12 +5,12 @@ namespace PondSharp.Examples
     /// </summary>
     public class Rand : BaseEntity
     {
-        public override void OnCreated()
+        protected override void OnCreated()
         {
             ChooseRandomDirection();
         }
         
-        public override void Tick()
+        protected override void Tick()
         {
             if (Random.Next(100) == 0) 
             {

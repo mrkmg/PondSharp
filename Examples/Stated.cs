@@ -27,16 +27,18 @@ namespace PondSharp.Examples
         private static readonly Random Random = new Random();
         private int DestinationX;
         private int DestinationY;
-        private int NoStuckDistance;
         private int StuckCounter;
         private State MyState;
 
         private static List<State> States = new List<State>();
+        private static int TotalEntities => States.Sum(s => s.Followers.Count + 1);
 
         public override void OnCreated()
         {
             StuckCounter = 10;
-            NoStuckDistance = 0;
+            DestinationX = X;
+            DestinationY = Y;
+            
             if (States.Count == 0 || States.All(s => s.IsFull))
             {
                 MyState = new State {Leader = this};
@@ -48,7 +50,10 @@ namespace PondSharp.Examples
                 MyState.Followers.Add(this);
             }
 
-
+            foreach (var state in States)
+            {
+                state.CurrentState = CurrentStateType.Exploding;
+            }
             ChangeColor(MyState.StateColor);
         }
 
@@ -83,29 +88,35 @@ namespace PondSharp.Examples
             var (fx, fy) = dM == 0 ? (0, 0) : ((int)Math.Round(x / dM), (int)Math.Round(y / dM));
             if (MoveTo(X + fx, Y + fy)) return;
             
-            if (dM <= NoStuckDistance && --StuckCounter <= 0) {
+            if (dM <= MyState.CurrentMaxStuckDistance && --StuckCounter <= 0)
+            {
                 DestinationX = X;
                 DestinationY = Y;
                 return;
             }
+
             
-            MoveTo(X +Random.Next(-1, 2), Y + Random.Next(-1, 2));
+            switch (Random.Next(3))
+            {
+                case 0: MoveTo(X + fy, Y - fx); break;
+                case 1: MoveTo(X - fy, Y + fx); break;
+                case 2: MoveTo(X - fx, Y - fy); break;
+            }
         }
 
-        private void SetMovePoint(int x, int y, int dist, int maxStuckness = 10)
+        private void SetMovePoint(int x, int y, int maxStuckCount)
         {
             DestinationX = x;
             DestinationY = y;
-            NoStuckDistance = dist;
-            StuckCounter = maxStuckness;
+            StuckCounter = maxStuckCount;
         }
 
         private class State
         {
             private static (int, int) RandomPointOnCircle(int x, int y, int dist, double? angle = null)
             {
-                if (angle == null) angle = 2.0 * 3.1415 * Random.NextDouble();
-                return (x + (int)(dist * Math.Sin(angle ?? 0)), y + (int)(dist * Math.Cos(angle ?? 0)));
+                angle ??= 2.0 * 3.1415 * Random.NextDouble();
+                return (x + (int)(dist * Math.Sin((double) angle)), y + (int)(dist * Math.Cos((double) angle)));
             }
 
             private static int RandomColor()
@@ -120,11 +131,13 @@ namespace PondSharp.Examples
             public List<Stated> Followers { get; } = new List<Stated>();
             public int StateColor = RandomColor();
             public bool IsFull => Followers.Count >= GroupSize;
-            private CurrentStateType CurrentState { get; set; } = CurrentStateType.Waiting;
-            private int CurrentCenterX;
-            private int CurrentCenterY;
-            private int CurrentDistance;
-            private int GroupSize = 5 + Random.Next(20);
+            public CurrentStateType CurrentState { get; set; } = CurrentStateType.WaitingInCircle;
+            public int CurrentCenterX;
+            public int CurrentCenterY;
+            public int CurrentDistance;
+            public int GroupSize = 5 + Random.Next(20);
+            public int CurrentMaxStuckDistance = int.MaxValue;
+            public int CurrentTaskTimeout = 100;
 
             private bool DestinationsFulfilled =>
                 !(Leader?.DestinationX != Leader?.X || Leader?.DestinationY != Leader?.Y ||
@@ -132,83 +145,103 @@ namespace PondSharp.Examples
 
             public void Tick()
             {
+                CurrentTaskTimeout--;
                 switch (CurrentState)
                 {
-                    case CurrentStateType.Pending:
-                    {if (States.Any(s => s.CurrentState == CurrentStateType.Separating)) break;
-                        CurrentDistance = 5 + Random.Next(20);
-                        do
-                        {
-                            CurrentCenterX = Random.Next(Leader.WorldMinX + CurrentDistance + 1,
-                                Leader.WorldMaxX - CurrentDistance - 1);
-                            CurrentCenterY = Random.Next(Leader.WorldMinY + CurrentDistance + 1,
-                                Leader.WorldMaxY - CurrentDistance - 1);
-                        } while (Math.Min(Math.Abs(CurrentCenterX), Math.Abs(CurrentCenterY)) < 20);
+                    case CurrentStateType.WaitingInCenter:
+                    {
+                        if (States.Any(s => s.CurrentState == CurrentStateType.MovingTowardCenter) && CurrentTaskTimeout > 0) break;
                         
-                        Leader.SetMovePoint(CurrentCenterX, CurrentCenterY, Followers.Count, 10);
-
-                        foreach (var follower in Followers)
-                        {
-                            follower.SetMovePoint(CurrentCenterX, CurrentCenterY, Followers.Count, 10);
-                        }
-
-                        CurrentState = CurrentStateType.Joining;
+                        StartMovingTowardExplosion();
                         break;
                     }
-                    case CurrentStateType.Joining:
-                        if (!DestinationsFulfilled) break;
-                            
-                        Leader.SetMovePoint(CurrentCenterX, CurrentCenterY, 20);
+                    case CurrentStateType.MovingToExplosionPoint:
+                        if (!DestinationsFulfilled && CurrentTaskTimeout > 0) break;
                         
-                        var i = 0;
-                        foreach (var follower in Followers)
-                        {
-                            var angle = 2.0 * 3.1415 * ( i++ / (double) Followers.Count );
-                            var (x, y) = RandomPointOnCircle(
-                                CurrentCenterX, 
-                                CurrentCenterY, 
-                                CurrentDistance,
-                                angle
-                            );
-                            follower.SetMovePoint(x, y, 20);
-                        }
-                        CurrentState = CurrentStateType.Exploding;
-                            
+                        StartExploding();
                         break;
                     case CurrentStateType.Exploding:
-                        if (DestinationsFulfilled)
-                        {
-                            CurrentState = CurrentStateType.Waiting;
-                        }
+                        if (!DestinationsFulfilled && CurrentTaskTimeout > 0) break;
+                        CurrentState = CurrentStateType.WaitingInCircle;
+                        CurrentTaskTimeout = 3000;
+                        
                         break;
-                    case CurrentStateType.Waiting:
-                        if (States.Any(s => s.CurrentState == CurrentStateType.Exploding || s.CurrentState == CurrentStateType.Joining)) break;
+                    case CurrentStateType.WaitingInCircle:
+                        if (States.Any(s => s.CurrentState == CurrentStateType.Exploding || s.CurrentState == CurrentStateType.MovingToExplosionPoint) && CurrentTaskTimeout > 0) break;
 
-                        Leader.SetMovePoint(0, 0, 30, 50);
-                        foreach (var follower in Followers)
-                        {
-                            follower.SetMovePoint(0, 0, 30, 50);
-                        }
-
-                        CurrentState = CurrentStateType.Separating;
+                        StartMovingTowardCenter();
                         break;
-                    case CurrentStateType.Separating:
-                        if (DestinationsFulfilled)
-                            CurrentState = CurrentStateType.Pending;
+                    case CurrentStateType.MovingTowardCenter:
+                        if (!DestinationsFulfilled && CurrentTaskTimeout > 0) break;
+                        
+                        CurrentState = CurrentStateType.WaitingInCenter;
+                        CurrentTaskTimeout = 2000;
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
-            }            
+            }
+
+            private void StartMovingTowardCenter()
+            {
+                CurrentState = CurrentStateType.MovingTowardCenter;
+                CurrentTaskTimeout = 1000;
+
+                CurrentMaxStuckDistance = 2 * (int) Math.Sqrt(TotalEntities / Math.PI);
+                Leader.SetMovePoint(0, 0, 30);
+                foreach (var follower in Followers)
+                {
+                    follower.SetMovePoint(0, 0, 30);
+                }
+            }
+
+            private void StartExploding()
+            {
+                CurrentState = CurrentStateType.Exploding;
+                CurrentTaskTimeout = 50;
+                CurrentMaxStuckDistance = int.MaxValue;
+                Leader.SetMovePoint(CurrentCenterX, CurrentCenterY, 10);
+                var i = 0;
+                foreach (var follower in Followers)
+                {
+                    var angle = 2.0 * 3.1415 * (i++ / (double) Followers.Count);
+                    var (x, y) = RandomPointOnCircle(
+                        CurrentCenterX,
+                        CurrentCenterY,
+                        CurrentDistance,
+                        angle
+                    );
+                    follower.SetMovePoint(x, y, 10);
+                }
+            }
+
+            private void StartMovingTowardExplosion()
+            {
+                CurrentState = CurrentStateType.MovingToExplosionPoint;
+                CurrentTaskTimeout = 1000;
+                CurrentMaxStuckDistance = 50;
+                CurrentDistance = 5 + Random.Next(20);
+                do
+                {
+                    CurrentCenterX = Random.Next(Leader.WorldMinX + CurrentDistance + 1,
+                        Leader.WorldMaxX - CurrentDistance - 1);
+                    CurrentCenterY = Random.Next(Leader.WorldMinY + CurrentDistance + 1,
+                        Leader.WorldMaxY - CurrentDistance - 1);
+                } while (Math.Sqrt(Math.Pow(CurrentCenterX, 2) + Math.Pow(CurrentCenterY, 2)) < 50);
+
+                Leader.SetMovePoint(CurrentCenterX, CurrentCenterY, 30);
+                foreach (var follower in Followers)
+                    follower.SetMovePoint(CurrentCenterX, CurrentCenterY, 30);
+            }
         }
 
         private enum CurrentStateType
         {
-            Joining,
+            MovingToExplosionPoint,
             Exploding,
-            Waiting,
-            Separating,
-            Pending
+            WaitingInCircle,
+            MovingTowardCenter,
+            WaitingInCenter
         }
     }
 }

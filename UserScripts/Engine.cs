@@ -13,6 +13,7 @@ namespace PondSharp.UserScripts
         
         public abstract IEnumerable<IEntity> Entities { get; }
         public abstract IEntity GetEntity(int entityId);
+        public abstract IEntity GetEntityAt(int x, int y);
 
         public IEnumerable<IEntity> GetVisibleEntities(int entityId) => GetVisibleEntities(GetEntity(entityId));
         public abstract IEnumerable<IEntity> GetVisibleEntities(IEntity entity);
@@ -47,7 +48,6 @@ namespace PondSharp.UserScripts
             WriteEntityColor(entity, color);
             return true;
         }
-
         protected void WriteEntityColor(IEntity entity, int color)
         {
             if (!(entity is Entity aEntity)) return;

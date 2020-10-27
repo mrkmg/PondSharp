@@ -20,13 +20,14 @@ namespace PondSharp.Client.Pond
         }
         
         private readonly int _blockWidth;
-        private List<IEntity>[] _entitiesByBlock = { };
-        private readonly Dictionary<int, IEntity> _entitiesById = new Dictionary<int, IEntity>();
-        private List<IEntity>[][] _entitiesByPosition = { };
+        private List<IEntity>[] _entitiesByBlock;
+        private IEntity[][] _entitiesByPosition;
         private List<IEntity> _entities = new List<IEntity>();
+        private readonly Dictionary<int, IEntity> _entitiesById = new Dictionary<int, IEntity>();
         
         public override IEnumerable<IEntity> Entities => _entities;
         public override IEntity GetEntity(int entityId) => _entitiesById[entityId];
+        public override IEntity GetEntityAt(int x, int y) => _entitiesByPosition[x - MinX][y - MinY];
         
         private static int Dist(int x1, int y1, int x2, int y2) =>
             (int) Math.Sqrt(Math.Pow(x1 - x2, 2) + Math.Pow(y1 - y2, 2));
@@ -40,19 +41,19 @@ namespace PondSharp.Client.Pond
             for (var i = 0; i < _entitiesByBlock.Length; i++) 
                 _entitiesByBlock[i] = new List<IEntity>();
             
-            _entitiesByPosition = new List<IEntity>[MaxX - MinX + 1][];
+            _entitiesByPosition = new IEntity[MaxX - MinX + 1][];
             for (var x = 0; x <= MaxX - MinX; x++)
             {
-                _entitiesByPosition[x] = new List<IEntity>[MaxY - MinY + 1];
+                _entitiesByPosition[x] = new IEntity[MaxY - MinY + 1];
                 for (var y = 0; y <= MaxY - MinY; y++)
-                    _entitiesByPosition[x][y] = new List<IEntity>();
-                
+                    _entitiesByPosition[x][y] = null;
+
             }
 
             foreach (var entity in _entities)
             {
                 _entitiesByBlock[GetBlock(entity)].Add(entity);
-                _entitiesByPosition[entity.X - MinX][entity.Y - MinY].Add(entity);
+                _entitiesByPosition[entity.X - MinX][entity.Y - MinY] = entity;
             }
         }
 
@@ -70,14 +71,14 @@ namespace PondSharp.Client.Pond
             return Math.Abs(entity.X - x + entity.Y - y) <= 2 &&
                    x >= MinX && x < MaxX &&
                    y >= MinY && y < MaxY && 
-                   _entitiesByPosition[x - MinX][y - MinY].Count == 0;
+                   _entitiesByPosition[x - MinX][y - MinY] == null;
         }
 
         public void InsertEntity(IEntity entity)
         {
             _entitiesById.Add(entity.Id, entity);
             _entitiesByBlock[GetBlock(entity)].Add(entity);
-            _entitiesByPosition[entity.X - MinX][entity.Y - MinY].Add(entity);
+            _entitiesByPosition[entity.X - MinX][entity.Y - MinY] = entity;
             _entities.Add(entity);
             OnEntityAdded(entity);
         }
@@ -86,9 +87,9 @@ namespace PondSharp.Client.Pond
         {
             if (entity.X == x && entity.Y == y) return true;
             if (!CanMoveTo(entity, x, y)) return false;
-            
-            _entitiesByPosition[entity.X - MinX][entity.Y - MinY].Remove(entity);
-            _entitiesByPosition[x - MinX][y - MinY].Add(entity);
+
+            _entitiesByPosition[entity.X - MinX][entity.Y - MinY] = null;
+            _entitiesByPosition[x - MinX][y - MinY] = entity;
             
             var oldBlock = GetBlock(entity);
             var newBlock = GetBlock(x, y);
@@ -109,7 +110,7 @@ namespace PondSharp.Client.Pond
             var entity = _entitiesById[entityId];
             entity.OnDestroy();
             _entitiesByBlock[GetBlock(entity)].Remove(entity);
-            _entitiesByPosition[entity.X - MinX][entity.Y - MinY].Remove(entity);
+            _entitiesByPosition[entity.X - MinX][entity.Y - MinY] = null;
             _entities.Remove(entity);
             return _entitiesById.Remove(entityId);
         }
@@ -125,10 +126,12 @@ namespace PondSharp.Client.Pond
             
             foreach (var entities in _entitiesByBlock)
                 entities.Clear();
-            
-            foreach (var ex in _entitiesByPosition)
-            foreach (var entities in ex)
-                entities.Clear();
+
+            foreach (var yList in _entitiesByPosition)
+            {
+                for (var y = 0; y < yList.Length; y++)
+                    yList[y] = null;
+            }
         }
     }
 }

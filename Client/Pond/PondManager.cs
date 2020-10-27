@@ -88,11 +88,18 @@ namespace PondSharp.Client.Pond
         public void InitializeAndCreateEntity(IEntity entity)
         {
             int ColorRnd(int min) => _random.Next(min) + (0xFF - min);
+            int xPos;
+            int yPos;
+            do
+            {
+                xPos = _random.Next(-_pondCanvas.Width / 2, _pondCanvas.Width / 2 - 1);
+                yPos = _random.Next(-_pondCanvas.Height / 2, _pondCanvas.Height / 2 - 1);
+            } while (_pondEngine.GetEntityAt(xPos, yPos) != null);
             entity.Initialize(
                 _nextId++,
                 _pondEngine,
-                _random.Next(-_pondCanvas.Width/2, _pondCanvas.Width/2-1), 
-                _random.Next(-_pondCanvas.Height/2, _pondCanvas.Height/2-1),
+                xPos, 
+                yPos,
                 Color.FromArgb(ColorRnd(0x66), ColorRnd(0x66), ColorRnd(0x66)).ToArgb());
             _pondEngine.InsertEntity(entity);
         }

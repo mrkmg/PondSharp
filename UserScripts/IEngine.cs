@@ -13,6 +13,7 @@ namespace PondSharp.UserScripts
         int MaxY { get; }
         IEnumerable<IEntity> Entities { get; }
         IEntity GetEntity(int entityId);
+        IEntity GetEntityAt(int x, int y);
         bool CanMoveTo(IEntity entity, int x, int y);
         bool MoveTo(int entityId, int x, int y);
         bool MoveTo(IEntity entity, int x, int y);

@@ -25,14 +25,14 @@ namespace PondSharp.Examples
         private int RndThinkDelay(int max, int curve = 4, int divisors = 20) =>
             (int) (Math.Pow(Random.Next(divisors) + 1, curve) / Math.Pow(divisors, curve) * max); 
         
-        public override void OnCreated()
+        protected override void OnCreated()
         {
-            ChangeViewDistance(30);
+            ChangeViewDistance(50);
             ChangeColor(WanderingColor);
             ChooseRandomDirection();
         }
         
-        public override void Tick()
+        protected override void Tick()
         {
             SetDirection();
             
@@ -92,12 +92,12 @@ namespace PondSharp.Examples
             var (groupCenterX, groupCenterY) = (tx / entities.Count, ty / entities.Count);
             var distanceToCenter = Dist(X, Y, groupCenterX, groupCenterY);
             
-            if (entities.Count > 10)
+            if (entities.Count > 5)
             {
                 ChangeColor(SeparatingColor);
                 // Move away from group center
                 (ForceX, ForceY) = GetForceDirection(X - groupCenterX, Y - groupCenterY);
-                ThinkCooldown = RndThinkDelay(entities.Count);
+                ThinkCooldown = RndThinkDelay(100, 1);
             } else if (distanceToCenter > 10)
             {
                 ChangeColor(JoiningColor);
@@ -109,6 +109,7 @@ namespace PondSharp.Examples
             {
                 ChangeColor(RestingColor);
                 (ForceX, ForceY) = (0, 0);
+                ThinkCooldown = RndThinkDelay(10);
             }
         }
     }

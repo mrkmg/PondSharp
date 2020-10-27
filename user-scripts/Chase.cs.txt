@@ -14,7 +14,7 @@ namespace PondSharp.Examples
         private int FleeCooldown;
         private bool IsMaster => MasterEntityId == Id;
         
-        public override void OnCreated()
+        protected override void OnCreated()
         {
             ChangeViewDistance(5);
             if (MasterEntityId != null) {
@@ -25,12 +25,12 @@ namespace PondSharp.Examples
             Target = (X, Y);
         }
 
-        public override void OnDestroy()
+        protected override void OnDestroy()
         {
             if (IsMaster) MasterEntityId = null;
         }
 
-        public override void Tick()
+        protected override void Tick()
         {
             if (IsMaster)
             {

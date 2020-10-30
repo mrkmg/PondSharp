@@ -1,8 +1,11 @@
+using PondSharp.UserScripts;
+
 namespace PondSharp.Examples
 {
     /// <summary>
     /// This entity moves randomly.
     /// </summary>
+    [PondDefaults(InitialCount = 0, NewCount = 500)]
     public class Rand : BaseEntity
     {
         protected override void OnCreated()

@@ -1,8 +1,11 @@
+using PondSharp.UserScripts;
+
 namespace PondSharp.Examples
 {
     /// <summary>
     /// The simplest example of an entity.
     /// </summary>
+    [PondDefaults(InitialCount = 0, NewCount = 500)]
     public class Simple : BaseEntity
     {
         protected override void OnCreated()

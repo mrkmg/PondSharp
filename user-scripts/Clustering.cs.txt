@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using PondSharp.UserScripts;
 
@@ -12,6 +13,7 @@ namespace PondSharp.Examples
     /// to dense, or it's too close to
     /// another entity.
     /// </summary>
+    [PondDefaults(NewCount = 100)]
     public class Clustering : BaseEntity
     {
         private const int WanderingColor = 0xFFFFFF;  // White
@@ -27,7 +29,7 @@ namespace PondSharp.Examples
         
         protected override void OnCreated()
         {
-            ChangeViewDistance(50);
+            ChangeViewDistance(15);
             ChangeColor(WanderingColor);
             ChooseRandomDirection();
         }
@@ -86,10 +88,10 @@ namespace PondSharp.Examples
                 ChangeColor(WanderingColor);
                 return;
             }
-            
-            var (tx, ty) = entities
-                .Aggregate<IEntity, (int X, int Y)>((0, 0), (a, e) => (a.X + e.X, a.Y + e.Y));
-            var (groupCenterX, groupCenterY) = (tx / entities.Count, ty / entities.Count);
+
+            var total = entities.Count;
+            var (groupCenterX, groupCenterY) = entities
+                .Aggregate<IEntity, (int X, int Y)>((0, 0), (a, e) => (a.X + e.X/total, a.Y + e.Y/total));
             var distanceToCenter = Dist(X, Y, groupCenterX, groupCenterY);
             
             if (entities.Count > 5)
@@ -98,7 +100,7 @@ namespace PondSharp.Examples
                 // Move away from group center
                 (ForceX, ForceY) = GetForceDirection(X - groupCenterX, Y - groupCenterY);
                 ThinkCooldown = RndThinkDelay(100, 1);
-            } else if (distanceToCenter > 10)
+            } else if (distanceToCenter > 5)
             {
                 ChangeColor(JoiningColor);
                 // Move toward group center

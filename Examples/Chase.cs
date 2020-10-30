@@ -1,15 +1,17 @@
 using System.Linq;
+using PondSharp.UserScripts;
 
 namespace PondSharp.Examples
 {
     /// <summary>
     /// All entities follow one master entity.
     /// </summary>
+    [PondDefaults(InitialCount = 0, NewCount = 50)]
     public class Chase : BaseEntity
     {
         private static int? MasterEntityId;
         private static (int x, int y) MasterXy = (0, 0);
-        
+
         private (int x, int y) Target = (0, 0);
         private int FleeCooldown;
         private bool IsMaster => MasterEntityId == Id;

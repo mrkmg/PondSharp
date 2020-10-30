@@ -17,12 +17,16 @@ namespace PondSharp.UserScripts
 
         public abstract IEnumerable<IEntity> GetVisibleEntities(IEntity entity);
 
-        protected void DoTick(Entity e) => e.DoTick();
-        protected void WasCreated(Entity e) => e.WasCreated();
-        protected void WasDestroyed(Entity e) => e.WasDestroyed();
-        protected void IntitializeEntity(Entity e, int id, int x = 0, int y = 0, int color = 0xFFFFFF,
-            int viewDistance = 0) =>
-            e.Initialize(id, this, x, y, color, viewDistance);
+        protected static void DoTick(Entity e)
+        {
+            e.DidMoveThisTick = false;
+            e.DoTick();
+        }
+
+        protected static void WasCreated(Entity e) => e.WasCreated();
+        protected static void WasDestroyed(Entity e) => e.WasDestroyed();
+        protected void InitializeEntity(Entity e, EntityInitialization initialization) =>
+            e.Initialize(this, initialization);
         
         #region Movement
         
@@ -74,8 +78,6 @@ namespace PondSharp.UserScripts
             WriteEntityViewDistance(entity, distance);
             return true;
         }
-
-
         private void WriteEntityViewDistance(IEntity entity, int distance)
         {
             if (!(entity is Entity aEntity)) return;
@@ -116,6 +118,20 @@ namespace PondSharp.UserScripts
         #endregion
         
         
+    }
+
+    public class EntityInitialization
+    {
+        public readonly int Id;
+        public int X;
+        public int Y;
+        public int Color = 0xFFFFFF;
+        public int ViewDistance;
+
+        public EntityInitialization(int id)
+        {
+            Id = id;
+        }
     }
 #pragma warning restore 1591
 }

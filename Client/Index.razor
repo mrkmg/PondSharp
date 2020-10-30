@@ -41,9 +41,9 @@
                             </div>
                             <input class="form-control input-count" type="number" @bind="_countToCreate[_selectedType]" min="1"/>
                             <select class="form-control" @bind="_selectedType">
-                                @foreach (var (type, name) in _availableEntityTypes)
+                                @foreach (var availableEntity in _availableEntityTypes)
                                 {
-                                    <option value="@type">@name</option>
+                                    <option value="@availableEntity.FullName">@availableEntity.ShortName</option>
                                 }
                             </select>
                             <div class="input-group-append">
@@ -99,25 +99,25 @@
     private IList<string> _errors = new List<string>();
     private string _selectedType = string.Empty;
 
-    private (string fullName, string name)[] _availableEntityTypes = new (string, string)[0];
+    private AvailableEntityEntry[] _availableEntityTypes = new AvailableEntityEntry[0];
     
-    private string EntityCountsByType
-    {
-        get
-        {
-            if (_engine == null) return "";
-            var typeCounts = _availableEntityTypes.ToDictionary(a => a.fullName, a => 0);
-            typeCounts.Add("*Other", 0);
-            foreach (var entity in _engine.Entities)
-                typeCounts[entity.GetType().FullName ?? "*Other"]++;
-            
-            return string.Join('\n', 
-                typeCounts
-                    .Where(tc => tc.Value != 0)
-                    .Select(typeCount => $"{typeCount.Key}: {typeCount.Value}")
-            );
-        }
-    }
+    // private string EntityCountsByType
+    // {
+    //     get
+    //     {
+    //         if (_engine == null) return "";
+    //         var typeCounts = _availableEntityTypes.ToDictionary(a => a.FullName, a => 0);
+    //         typeCounts.Add("*Other", 0);
+    //         foreach (var entity in _engine.Entities)
+    //             typeCounts[entity.GetType().FullName ?? "*Other"]++;
+    //         
+    //         return string.Join('\n', 
+    //             typeCounts
+    //                 .Where(tc => tc.Value != 0)
+    //                 .Select(typeCount => $"{typeCount.Key}: {typeCount.Value}")
+    //         );
+    //     }
+    // }
 
     private readonly Dictionary<string, int> _countToCreate = new Dictionary<string, int>();
 
@@ -130,7 +130,7 @@
     private PondCanvas _canvas;
 #pragma warning restore 649
     
-    private int _gridSize = 2;
+    private int _gridSize = 6;
     private int _pondWidth = 400;
     private int _pondHeight = 300;
 
@@ -153,32 +153,44 @@
         TryCreatePondManager();
     }
     
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override void OnAfterRender(bool firstRender)
     {
         if (!firstRender) return;
         
         TryCreatePondManager();
         if (_ideElement.IsCompiled)
-            await ReadAssemblyInfo();
+            ReadAssemblyInfo();
     }
 
     private async Task IdeElementInitialized()
     {
         _display = DisplayType.Pond;
-        await ReadAssemblyInfo().ConfigureAwait(false);
+        ReadAssemblyInfo();
         await StartPond().ConfigureAwait(false);
-        if (_ideElement.IsCompiled && _selectedType != null)
+        if (_ideElement.IsCompiled)
         {
-            await CreateEntity(_selectedType).ConfigureAwait(false);
+            CreatedDefaultEntities();
         }
     }
 
-    private async Task ReadAssemblyInfo()
+    private void ReadAssemblyInfo()
     {
         var types = _ideElement.GetTypesOf(typeof(IEntity));
 
-        _availableEntityTypes = types.Select(t => t.FullName)
-            .Select(t => (t, t?.Split('.').Last())).ToArray();
+        _availableEntityTypes = types.Select(type =>
+        {
+            PondDefaultsAttribute defaults = null;
+            foreach (var attribute in Attribute.GetCustomAttributes(type)) 
+                if (attribute is PondDefaultsAttribute d) defaults = d;
+            defaults ??= new PondDefaultsAttribute();
+            return new AvailableEntityEntry
+            {
+                Type = type,
+                Defaults = defaults,
+                FullName = type.FullName,
+                ShortName = type.FullName?.Split('.').Last(),
+            };
+        }).ToArray();
 
         if (_availableEntityTypes.Length == 0)
         {
@@ -186,23 +198,23 @@
             return;
         }
         
-        if (!_availableEntityTypes.Select(a => a.fullName).Contains(_selectedType))
-            _selectedType = _availableEntityTypes.First().fullName;
+        if (!_availableEntityTypes.Select(a => a.FullName).Contains(_selectedType))
+            _selectedType = _availableEntityTypes.First().FullName;
         
         _countToCreate.Clear();
-        foreach (var (fullName, _) in _availableEntityTypes)
-            _countToCreate.Add(fullName, fullName switch {
-                "PondSharp.Examples.Stated" => 500,
-                "PondSharp.Examples.Chase" => 100,
-                "PondSharp.Examples.Clustering" => 200,
-                "PondSharp.Examples.Simple" => 2000,
-                "PondSharp.Examples.Rand" => 500,
-                _ => 100
-            });
-        
-        foreach (var (fullName, _) in _availableEntityTypes)
-            if (await LocalStorage.ContainKeyAsync($"ec-{fullName}").ConfigureAwait(false))
-                _countToCreate[fullName] = await LocalStorage.GetItemAsync<int>($"ec-{fullName}").ConfigureAwait(false);
+        foreach (var availableEntity in _availableEntityTypes)
+        {
+            _countToCreate.Add(availableEntity.FullName, availableEntity.Defaults.NewCount);
+        }
+    }
+
+    private void CreatedDefaultEntities()
+    {
+        foreach (var availableEntity in _availableEntityTypes)
+        {
+            if (availableEntity.Defaults.InitialCount > 0)
+                CreateEntity(availableEntity.FullName, availableEntity.Defaults.InitialCount);
+        }
     }
 
     private void TryCreatePondManager()
@@ -212,12 +224,11 @@
         _manager = new PondManager(_engine, _canvas);
     }
 
-    private async Task CreateEntity(string fullName)
+    private void CreateEntity(string fullName, int? count = null)
     {
-        for (var i = 0; i < _countToCreate[fullName]; i++) 
+        count ??= _countToCreate[fullName];
+        for (var i = 0; i < count; i++) 
             RealCreateEntity(fullName);
-        
-        await LocalStorage.SetItemAsync($"ec-{fullName}", _countToCreate[fullName]).ConfigureAwait(false);
     }
     
     private void RealCreateEntity(string fullName)
@@ -240,9 +251,10 @@
             await Task.Delay(TimeSpan.FromMilliseconds(100)).ConfigureAwait(false);
             await _ideElement.TriggerSave().ConfigureAwait(false);
             _ideElement.Compile();
-            await ReadAssemblyInfo().ConfigureAwait(false);
+            ReadAssemblyInfo();
             await StartPond().ConfigureAwait(false);
             _display = DisplayType.Pond;
+            CreatedDefaultEntities();
             StateHasChanged();
         }
         catch (CompileException e)
@@ -281,6 +293,14 @@
         }
         _canvas.ClearChangeQueue();
         _engine.ClearAllEntities();
+    }
+
+    private class AvailableEntityEntry
+    {
+        public string FullName;
+        public string ShortName;
+        public Type Type;
+        public PondDefaultsAttribute Defaults;
     }
 
 }

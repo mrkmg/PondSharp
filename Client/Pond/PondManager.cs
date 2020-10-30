@@ -14,7 +14,7 @@ namespace PondSharp.Client.Pond
         
         private readonly Timer _tickTimer;
         private DateTime _lastTime = DateTime.Now;
-        private readonly Random _random = new Random();
+        private static readonly Random Random = new Random();
         private int _nextId;
         
         public double CurrentTickTime = 1;
@@ -23,6 +23,7 @@ namespace PondSharp.Client.Pond
         public PondManager([NotNull] PondEngine engine, [NotNull] PondCanvas canvas)
         {
             _tickTimer = new Timer(16); // 60 tps (1000/60)
+            //_tickTimer = new Timer(33); // 30 tps (1000/30)
             _tickTimer.Elapsed += (sender, args) => Tick();
             
             _pondCanvas = canvas;
@@ -82,18 +83,25 @@ namespace PondSharp.Client.Pond
             _tickTimer.Enabled = false;
             await _pondCanvas.Stop().ConfigureAwait(false);
         }
+        
+        private static int RandomColor(float minBrightness = 0.5f)
+        {
+            Color color;
+            do color = Color.FromArgb(Random.Next(255), Random.Next(255), Random.Next(255));
+            while (color.GetBrightness() < minBrightness);
+            return color.ToArgb();
+        }
 
         public void InitializeAndCreateEntity(Entity entity)
         {
-            int ColorRnd(int min) => _random.Next(min) + (0xFF - min);
             int xPos;
             int yPos;
             do
             {
-                xPos = _random.Next(-_pondCanvas.Width / 2, _pondCanvas.Width / 2 - 1);
-                yPos = _random.Next(-_pondCanvas.Height / 2, _pondCanvas.Height / 2 - 1);
+                xPos = Random.Next(_pondEngine.MinX, _pondEngine.MaxX);
+                yPos = Random.Next(_pondEngine.MinY, _pondEngine.MaxY);
             } while (_pondEngine.GetEntityAt(xPos, yPos) != null);
-            _pondEngine.InsertEntity(entity, _nextId++, xPos, yPos, Color.FromArgb(ColorRnd(0x66), ColorRnd(0x66), ColorRnd(0x66)).ToArgb());
+            _pondEngine.InsertEntity(entity, _nextId++, xPos, yPos, RandomColor());
         }
 
         public void Reset()

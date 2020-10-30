@@ -1,7 +1,7 @@
 PondSharp
 ====
 
-A tech demo of .net/C# in-browser compilation.
+A tech demo of in-browser C# (.NET Standard) compilation and PixiJS WebGL.
 
 **Who:** This project was made by [Kevin Gravier](https://github.com/mrkmg) and open sourced under the MIT License.
 

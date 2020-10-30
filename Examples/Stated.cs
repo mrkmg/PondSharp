@@ -22,6 +22,7 @@ namespace PondSharp.Examples
     /// and setting destinations for all the followers
     /// in that group. 
     /// </summary>
+    [PondDefaults(InitialCount = 100, NewCount = 20)]
     public class Stated : Entity
     {
         private static readonly Random Random = new Random();
@@ -29,26 +30,28 @@ namespace PondSharp.Examples
         private int DestinationY;
         private int StuckCounter;
         private State MyState;
+        private int FleeX;
+        private int FleeY;
+        private int FleeCooldown;
 
         private static List<State> States = new List<State>();
         private static int TotalEntities => States.Sum(s => s.Followers.Count + 1);
+        private static int TotalEntitiesArea => (int) Math.Sqrt(TotalEntities / Math.PI);
 
         protected override void OnCreated()
         {
             StuckCounter = 10;
             DestinationX = X;
             DestinationY = Y;
-            
-            if (States.Count == 0 || States.All(s => s.IsFull))
+
+            MyState = States.FirstOrDefault(s => !s.IsFull);
+            if (MyState == null)
             {
                 MyState = new State {Leader = this};
                 States.Add(MyState);
             }
-            else
-            {
-                MyState = States.First(s => !s.IsFull);
-                MyState.Followers.Add(this);
-            }
+            
+            MyState.Followers.Add(this);
 
             foreach (var state in States)
             {
@@ -59,15 +62,11 @@ namespace PondSharp.Examples
 
         protected override void OnDestroy()
         {
-            if (MyState == null || MyState.Leader.Id != Id) return;
-            
-            MyState.Leader = null;
-            foreach (var follower in MyState.Followers)
-            {
-                follower.MyState = null;
-            }
-            MyState.Followers.Clear();
-            States.Remove(MyState);
+            if (MyState == null) return;
+            if (MyState.Leader?.Id == Id) MyState.Leader = null;
+            MyState.Followers.Remove(this);
+            if (MyState.Followers.Count == 0) States.Remove(MyState);
+            MyState = null;
         }
 
         protected override void Tick()
@@ -83,10 +82,21 @@ namespace PondSharp.Examples
 
             if (X == DestinationX && Y == DestinationY) return;
 
+            if (FleeCooldown > 0)
+            {
+                FleeCooldown--;
+                var t = Random.Next(9);
+                if (t == 0) MoveTo(X - FleeX, Y - FleeY);
+                else if (t < 5)  MoveTo(X + FleeY, Y - FleeX);
+                else MoveTo(X - FleeY, Y + FleeX);
+                return;
+            }
+
+            if (MoveTowardsTarget()) return;
+            
             var (x, y) = ((double)DestinationX - X, (double)DestinationY - Y);
             var dM = Math.Sqrt(Math.Pow(x, 2) + Math.Pow(y, 2));
             var (fx, fy) = dM == 0 ? (0, 0) : ((int)Math.Round(x / dM), (int)Math.Round(y / dM));
-            if (MoveTo(X + fx, Y + fy)) return;
             
             if (dM <= MyState.CurrentMaxStuckDistance && --StuckCounter <= 0)
             {
@@ -95,13 +105,9 @@ namespace PondSharp.Examples
                 return;
             }
 
-            
-            switch (Random.Next(3))
-            {
-                case 0: MoveTo(X + fy, Y - fx); break;
-                case 1: MoveTo(X - fy, Y + fx); break;
-                case 2: MoveTo(X - fx, Y - fy); break;
-            }
+            FleeCooldown = 3;
+            FleeX = fx;
+            FleeY = fy;
         }
 
         private void SetMovePoint(int x, int y, int maxStuckCount)
@@ -109,14 +115,14 @@ namespace PondSharp.Examples
             DestinationX = x;
             DestinationY = y;
             StuckCounter = maxStuckCount;
+            SetMoveTowards(x, y);
         }
 
         private class State
         {
-            private static (int, int) RandomPointOnCircle(int x, int y, int dist, double? angle = null)
+            private static (int, int) RandomPointOnCircle(int x, int y, int dist, double angle)
             {
-                angle ??= 2.0 * 3.1415 * Random.NextDouble();
-                return (x + (int)(dist * Math.Sin((double) angle)), y + (int)(dist * Math.Cos((double) angle)));
+                return (x + (int)(dist * Math.Sin(angle)), y + (int)(dist * Math.Cos(angle)));
             }
 
             private static int RandomColor()
@@ -186,12 +192,10 @@ namespace PondSharp.Examples
             {
                 CurrentState = CurrentStateType.MovingTowardCenter;
                 CurrentTaskTimeout = 1000;
-
-                CurrentMaxStuckDistance = 2 * (int) Math.Sqrt(TotalEntities / Math.PI);
-                Leader.SetMovePoint(0, 0, 30);
+                
                 foreach (var follower in Followers)
                 {
-                    follower.SetMovePoint(0, 0, 30);
+                    follower.SetMovePoint(0, 0, 10);
                 }
             }
 
@@ -200,7 +204,6 @@ namespace PondSharp.Examples
                 CurrentState = CurrentStateType.Exploding;
                 CurrentTaskTimeout = 50;
                 CurrentMaxStuckDistance = int.MaxValue;
-                Leader.SetMovePoint(CurrentCenterX, CurrentCenterY, 10);
                 var i = 0;
                 foreach (var follower in Followers)
                 {
@@ -218,20 +221,21 @@ namespace PondSharp.Examples
             private void StartMovingTowardExplosion()
             {
                 CurrentState = CurrentStateType.MovingToExplosionPoint;
-                CurrentTaskTimeout = 1000;
-                CurrentMaxStuckDistance = 50;
-                CurrentDistance = 5 + Random.Next(20);
+                CurrentTaskTimeout = 1500;
+                CurrentMaxStuckDistance = 20;
+                CurrentDistance = (int)(Followers.Count / 1.5);
+
+                var minDistanceFromCenter = 1.5 * TotalEntitiesArea;
                 do
                 {
                     CurrentCenterX = Random.Next(Leader.WorldMinX + CurrentDistance + 1,
                         Leader.WorldMaxX - CurrentDistance - 1);
                     CurrentCenterY = Random.Next(Leader.WorldMinY + CurrentDistance + 1,
                         Leader.WorldMaxY - CurrentDistance - 1);
-                } while (Math.Sqrt(Math.Pow(CurrentCenterX, 2) + Math.Pow(CurrentCenterY, 2)) < 50);
+                } while (Math.Sqrt(Math.Pow(CurrentCenterX, 2) + Math.Pow(CurrentCenterY, 2)) < minDistanceFromCenter);
 
-                Leader.SetMovePoint(CurrentCenterX, CurrentCenterY, 30);
                 foreach (var follower in Followers)
-                    follower.SetMovePoint(CurrentCenterX, CurrentCenterY, 30);
+                    follower.SetMovePoint(CurrentCenterX, CurrentCenterY, 3);
             }
         }
 

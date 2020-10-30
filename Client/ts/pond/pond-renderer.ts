@@ -61,7 +61,7 @@ export class PondRenderer {
     createEntity(id: number, x: number, y: number, color: number) {
         const graphic = new PIXI.Graphics();
         graphic.beginFill(color);
-        graphic.drawRect(0, 0, this.gridSize, this.gridSize);
+        graphic.drawCircle(this.gridSize/2, this.gridSize/2, this.gridSize/2);
         graphic.position.x = x * this.gridSize;
         graphic.position.y = y * this.gridSize;
         graphic.endFill();
@@ -88,7 +88,7 @@ export class PondRenderer {
         const graphic = this.entities[id] as PIXI.Graphics;
         graphic.clear();
         graphic.beginFill(color);
-        graphic.drawRect(0, 0, this.gridSize, this.gridSize);
+        graphic.drawCircle(this.gridSize/2, this.gridSize/2, this.gridSize/2);
         graphic.endFill();
     }
     

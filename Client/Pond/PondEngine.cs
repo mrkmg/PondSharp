@@ -13,8 +13,8 @@ namespace PondSharp.Client.Pond
         {
             _blockWidth = (int) Math.Ceiling((double)width / BlockSize);
             MinX = -width / 2;
-            MaxX = width / 2;
-            MinY = -height / 2 - 1;
+            MaxX = width / 2 - 1;
+            MinY = -height / 2;
             MaxY = height / 2 - 1;
             ResetSize();
         }
@@ -59,9 +59,9 @@ namespace PondSharp.Client.Pond
 
         private IEnumerable<IEntity> GetEntitiesAround(int centerX, int centerY, int dist)
         {
-            for (var x = centerX - dist; x < centerX + dist + BlockSize; x += BlockSize)
-            for (var y = centerY - dist; y < centerY + dist + BlockSize; y += BlockSize)
-                if (x >= MinX && x < MaxX && y >= MinY && y < MaxY)
+            for (var x = centerX - dist; x <= centerX + dist + BlockSize; x += BlockSize)
+            for (var y = centerY - dist; y <= centerY + dist + BlockSize; y += BlockSize)
+                if (x >= MinX && x <= MaxX && y >= MinY && y <= MaxY)
                     foreach (var entity in _entitiesByBlock[GetBlock(x, y)].Where(entity => Dist(entity.X, entity.Y, centerX, centerY) <= dist))
                         yield return entity;
         }
@@ -74,14 +74,20 @@ namespace PondSharp.Client.Pond
         public override bool CanMoveTo(IEntity entity, int x, int y)
         {
             return Math.Abs(entity.X - x + entity.Y - y) <= 2 &&
-                   x >= MinX && x < MaxX &&
-                   y >= MinY && y < MaxY && 
+                   x >= MinX && x <= MaxX &&
+                   y >= MinY && y <= MaxY && 
                    _entitiesByPosition[x - MinX][y - MinY] == null;
         }
 
         public void InsertEntity(Entity entity, int id, int x = 0, int y = 0, int color = 0xFFFFFF, int viewDistance = 0)
         {
-            IntitializeEntity(entity, id, x, y, color, viewDistance);
+            InitializeEntity(entity, new EntityInitialization(id)
+            {
+                X = x, 
+                Y = y, 
+                Color = color, 
+                ViewDistance = viewDistance
+            });
             _entitiesById.Add(entity.Id, entity);
             _entitiesByBlock[GetBlock(entity)].Add(entity);
             _entitiesByPosition[entity.X - MinX][entity.Y - MinY] = entity;
@@ -128,7 +134,14 @@ namespace PondSharp.Client.Pond
             _entities.Clear();
             foreach (var entity in _entitiesById.Values)
             {
-                WasDestroyed(entity);
+                try
+                {
+                    WasDestroyed(entity);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"{e.Message} {e.StackTrace}");
+                }
             }
             _entitiesById.Clear();
             

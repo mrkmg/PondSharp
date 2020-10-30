@@ -45,29 +45,54 @@ namespace PondSharp.UserScripts
 
         /// <inheritdoc />
         public int WorldMaxY => Engine.MaxY;
+        
+        /// <summary>
+        /// Target position X to move toward.
+        /// </summary>
+        protected int TargetX { get; private set; }
+        
+        /// <summary>
+        /// Target position Y to move toward.
+        /// </summary>
+        protected int TargetY { get; private set; }
+        
+        private double ApproxX { get; set; }
+        private double ApproxY { get; set; }
 
         private bool _intialized;
-
+        
         /// <summary>
-        /// Initialize Entity
+        /// Did the entity move this tick;
         /// </summary>
-        /// <param name="id"></param>
-        /// <param name="engine"></param>
-        /// <param name="x"></param>
-        /// <param name="y"></param>
-        /// <param name="color"></param>
-        /// <param name="viewDistance"></param>
-        /// <exception cref="AlreadyInitializedException"></exception>
-        internal void Initialize(int id, Engine engine, int x = 0, int y = 0, int color = 0xFFFFFF, int viewDistance = 0)
+        public bool DidMoveThisTick { get; internal set; }
+
+        internal void Initialize(Engine engine, EntityInitialization initialization)
         {
             if (_intialized) throw new AlreadyInitializedException();
-            Id = id;
             Engine = engine;
-            X = x;
-            Y = y;
-            Color = color;
+            
+            Id = initialization.Id;
+            X = initialization.X;
+            Y = initialization.Y;
+            ApproxX = X;
+            ApproxY = Y;
+            Color = initialization.Color;
+            ViewDistance = initialization.ViewDistance;
+            
             _intialized = true;
-            ViewDistance = viewDistance;
+        }
+
+        /// <summary>
+        /// Set a target position for the entity
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        protected void SetMoveTowards(int x, int y)
+        {
+            TargetX = x;
+            TargetY = y;
+            ApproxX = X;
+            ApproxY = Y;
         }
 
         /// <summary>
@@ -84,7 +109,30 @@ namespace PondSharp.UserScripts
         /// <param name="x">World X Position</param>
         /// <param name="y">World Y Position</param>
         /// <returns>If the entity moved to the World Position</returns>
-        protected bool MoveTo(int x, int y) => Engine.MoveTo(this, x, y);
+        protected bool MoveTo(int x, int y)
+        {
+            if (DidMoveThisTick) return false;
+            DidMoveThisTick = true;
+            ApproxX = x;
+            ApproxY = y;
+            return Engine.MoveTo(this, x, y);
+        }
+
+        /// <summary>
+        /// Execute a move towards the current set target position
+        /// </summary>
+        /// <returns></returns>
+        protected bool MoveTowardsTarget()
+        {
+            if (DidMoveThisTick) return false;
+            DidMoveThisTick = true;
+            var (x, y) = (TargetX - ApproxX, TargetY - ApproxY);
+            var dM = Math.Sqrt(Math.Pow(x, 2) + Math.Pow(y, 2));
+            var (fx, fy) = dM == 0 ? (0, 0) : (x / dM, y / dM);
+            ApproxX += fx;
+            ApproxY += fy;
+            return Engine.MoveTo(this, (int)Math.Round(ApproxX), (int)Math.Round(ApproxY));
+        }
 
         /// <summary>
         /// Checks if entity can change its color to the specified color.

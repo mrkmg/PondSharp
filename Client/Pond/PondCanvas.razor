@@ -6,7 +6,7 @@
 <div @ref="_pondHolder" style="width: @(Width * GridSize)px; height: @(Height * GridSize)px; padding: 0"></div>
 
 @code {
-    private const int QueueLength = 500;
+    private const int QueueLength = 2000;
 
     private IJSInProcessRuntime Js => (IJSInProcessRuntime) JsRuntime;
     private Microsoft.JSInterop.WebAssembly.WebAssemblyJSRuntime JsRaw => (Microsoft.JSInterop.WebAssembly.WebAssemblyJSRuntime) JsRuntime;

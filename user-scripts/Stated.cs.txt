@@ -22,7 +22,7 @@ namespace PondSharp.Examples
     /// and setting destinations for all the followers
     /// in that group. 
     /// </summary>
-    [PondDefaults(InitialCount = 100, NewCount = 20)]
+    [PondDefaults(InitialCount = 500, NewCount = 100)]
     public class Stated : Entity
     {
         private static readonly Random Random = new Random();
@@ -192,6 +192,7 @@ namespace PondSharp.Examples
             {
                 CurrentState = CurrentStateType.MovingTowardCenter;
                 CurrentTaskTimeout = 1000;
+                CurrentMaxStuckDistance = (int)Math.Sqrt(TotalEntities / Math.PI);
                 
                 foreach (var follower in Followers)
                 {

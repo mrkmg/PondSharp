@@ -1,28 +1,26 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
-    <RazorLangVersion>3.0</RazorLangVersion>
+    <TargetFramework>net5.0</TargetFramework>
     <BlazorEnableCompression>false</BlazorEnableCompression>
     <AssemblyVersion>1.0.1</AssemblyVersion>
     <BlazorWebAssemblyEnableLinking>false</BlazorWebAssemblyEnableLinking>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TypeScriptCompileBlocked>true</TypeScriptCompileBlocked>
+    <PublishTrimmed>false</PublishTrimmed>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Blazored.LocalStorage" Version="3.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="3.2.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Build" Version="3.2.1" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="3.2.1" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="3.1.9" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="5.0.0-rc.2.*" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="5.0.0-rc.2.*" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.7.0" />
     <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.7.56" />
     <PackageReference Include="Roslyn.Analyzers" Version="1.0.3.4" />
-    <PackageReference Include="System.Net.Http.Json" Version="3.2.0" />
+    <PackageReference Include="System.Net.Http.Json" Version="5.0.0-rc.2.*" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Shared\PondSharp.Shared.csproj" />
     <ProjectReference Include="..\UserScripts\PondSharp.UserScripts.csproj" />
     <ProjectReference Include="..\Examples\PondSharp.Examples.csproj" />
   </ItemGroup>
@@ -46,24 +44,24 @@
     <Content Remove="SampleProject\**" />
   </ItemGroup>
   
-  <Target Name="CopyExampleScriptsToUserScripts" BeforeTargets="BeforeBuild" Inputs="@(ExampleFiles)" Outputs="@(ExampleFiles->'$(ProjectDir)\wwwroot\user-scripts\%(RecursiveDir)%(Filename)%(Extension).txt')">
+  <Target Name="CopyExampleScriptsToUserScripts" BeforeTargets="BeforeCompile" Inputs="@(ExampleFiles)" Outputs="@(ExampleFiles->'$(ProjectDir)\wwwroot\user-scripts\%(RecursiveDir)%(Filename)%(Extension).txt')">
     <Message Text="Copying Example Files To User Scripts" Importance="high" />
     <Copy SourceFiles="@(ExampleFiles)" DestinationFiles="@(ExampleFiles->'$(ProjectDir)\wwwroot\user-scripts\%(RecursiveDir)%(Filename)%(Extension).txt')" />
   </Target>
 
-  <Target Name="CopyExampleScriptsToSampleProject" BeforeTargets="BeforeBuild" Inputs="@(ExampleFiles)" Outputs="@(ExampleFiles->'$(ProjectDir)\SampleProject\PondSharp.Examples\%(RecursiveDir)%(Filename)%(Extension)')">
+  <Target Name="CopyExampleScriptsToSampleProject" BeforeTargets="BeforeCompile" Inputs="@(ExampleFiles)" Outputs="@(ExampleFiles->'$(ProjectDir)\SampleProject\PondSharp.Examples\%(RecursiveDir)%(Filename)%(Extension)')">
     <Message Text="Copying Example Files To Sample Project" Importance="high" />
     <Copy SourceFiles="@(ExampleFiles)" DestinationFiles="@(ExampleFiles->'$(ProjectDir)\SampleProject\PondSharp.Examples\%(RecursiveDir)%(Filename)%(Extension)')" />
   </Target>
 
-  <Target Name="MakeSampleZip" BeforeTargets="BeforeBuild;CopyExampleScriptsToSampleProject" Inputs="$(SolutionDir)UserScripts\bin\$(Configuration)\netstandard2.1\PondSharp.UserScripts.dll;$(SolutionDir)UserScripts\bin\$(Configuration)\PondSharp.UserScripts.xml;$(ProjectDir)SampleProject\**\*.*" Outputs="$(ProjectDir)wwwroot\sample-project.zip">
+  <Target Name="MakeSampleZip" BeforeTargets="BeforeCompile;CopyExampleScriptsToSampleProject" Inputs="$(SolutionDir)UserScripts\bin\$(Configuration)\netstandard2.1\PondSharp.UserScripts.dll;$(SolutionDir)UserScripts\bin\$(Configuration)\PondSharp.UserScripts.xml;$(ProjectDir)SampleProject\**\*.*" Outputs="$(ProjectDir)wwwroot\sample-project.zip">
     <Message Text="Copying UserScripts DLL" Importance="high" />
     <Copy SourceFiles="$(SolutionDir)UserScripts\bin\$(Configuration)\netstandard2.1\PondSharp.UserScripts.dll;$(SolutionDir)UserScripts\bin\$(Configuration)\PondSharp.UserScripts.xml" DestinationFolder="SampleProject\PondSharp.Examples" />
     <Message Text="Creating Sample Project ZIP" Importance="high" />
     <ZipDirectory DestinationFile="$(ProjectDir)wwwroot\sample-project.zip" SourceDirectory="SampleProject" Overwrite="true" />
   </Target>
   
-  <Target Name="BuildWebAssets" BeforeTargets="BeforeBuild" Inputs="@(TypeScriptFiles)" Outputs="@(CompiledJavascriptFiles)">
+  <Target Name="BuildWebAssets" BeforeTargets="BeforeCompile" Inputs="@(TypeScriptFiles)" Outputs="@(CompiledJavascriptFiles)">
     <Message Text="Running NPM Build" Importance="high" />
     <Exec Command="npm run build:release" Condition="$(Configuration) == 'Release'" />
     <Exec Command="npm run build:debug" Condition="$(Configuration) == 'Debug'" />

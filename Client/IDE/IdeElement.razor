@@ -111,14 +111,7 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
-        var types = new List<Type>
-        {
-            typeof(object),
-            typeof(Entity),
-            typeof(System.Drawing.Color),
-            typeof(Enumerable)
-        };
-        _compiler = await CSharpClassCompiler.Make(types, Http.BaseAddress).ConfigureAwait(false);
+        _compiler = await CSharpClassCompiler.Make(Http.BaseAddress).ConfigureAwait(false);
         await CreateEditor().ConfigureAwait(false);
     }
     

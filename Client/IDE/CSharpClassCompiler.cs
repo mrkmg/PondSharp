@@ -14,15 +14,28 @@ namespace PondSharp.Client.IDE
     {
         private readonly Uri _baseUri;
         private List<MetadataReference> _references;
-        private static readonly Dictionary<string, MetadataReference> CachedReferences = new Dictionary<string, MetadataReference>();
         private Assembly _assembly;
+
+        private static readonly string[] Dlls = {
+            "mscorlib.dll",
+            "netstandard.dll",
+            "System.Collections.dll",
+            "System.Console.dll",
+            "System.Drawing.Primitives.dll",
+            "System.Linq.dll",
+            // "System.Linq.Expressions.dll",
+            "System.Private.CoreLib.dll",
+            // "System.ObjectModel.dll",
+            "System.Runtime.dll",
+            "PondSharp.UserScripts.dll"
+        };
 
         public bool HasAssembly => _assembly != null;
         
-        public static async Task<CSharpClassCompiler> Make(IEnumerable<Type> referenceTypes, Uri baseUri)
+        public static async Task<CSharpClassCompiler> Make(Uri baseUri)
         {
             var compiler = new CSharpClassCompiler(baseUri);
-            await compiler.SetReferences(referenceTypes).ConfigureAwait(false);
+            await compiler.SetReferences().ConfigureAwait(false);
             return compiler;
         }
 
@@ -44,7 +57,8 @@ namespace PondSharp.Client.IDE
                 assemblyName,
                 trees,
                 _references,
-                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                // must use concurrentBuild:false in blazor due to threading limitations
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, concurrentBuild: false) 
             );
             using var ms = new MemoryStream();
             var result = compilation.Emit(ms);
@@ -91,29 +105,17 @@ namespace PondSharp.Client.IDE
             return instance;
         }
 
-        private async Task SetReferences(IEnumerable<Type> referenceTypes)
+        private async Task SetReferences()
         {
             using var client = new HttpClient
             {
                 BaseAddress = _baseUri
             };
 
-            var neededAssemblyLocations = referenceTypes
-                .Select(type => type.Assembly.Location)
-                .Distinct()
-                .Concat(new [] { "netstandard.dll" })
-                .ToArray();
-
-            var missingAssemblies = neededAssemblyLocations
-                .Where(location => !CachedReferences.Keys.Contains(location));
-            
-            foreach (var missingAssemblyLocation in missingAssemblies)
-            {
-                var stream = await client.GetStreamAsync($"_framework/_bin/{missingAssemblyLocation}").ConfigureAwait(false);
-                CachedReferences.Add(missingAssemblyLocation, MetadataReference.CreateFromStream(stream));
-            }
-
-            _references = neededAssemblyLocations.Select(l => CachedReferences[l]).ToList();
+            var downloads = await Task.WhenAll(
+                Dlls.Select(dll => client.GetStreamAsync($"_framework/{dll}"))
+            ).ConfigureAwait(false);
+            _references = downloads.Select(dl => (MetadataReference) MetadataReference.CreateFromStream(dl)).ToList();
         }
     }
 

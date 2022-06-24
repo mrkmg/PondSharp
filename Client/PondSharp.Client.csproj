@@ -12,8 +12,8 @@
 
   <ItemGroup>
     <PackageReference Include="Blazored.LocalStorage" Version="3.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="5.0.0-rc.2.*" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="5.0.0-rc.2.*" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="5.0.17" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="5.0.17" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.7.0" />
     <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.7.56" />
     <PackageReference Include="Roslyn.Analyzers" Version="1.0.3.4" />
@@ -56,7 +56,7 @@
 
   <Target Name="MakeSampleZip" BeforeTargets="BeforeCompile;CopyExampleScriptsToSampleProject" Inputs="$(SolutionDir)UserScripts\bin\$(Configuration)\netstandard2.1\PondSharp.UserScripts.dll;$(SolutionDir)UserScripts\bin\$(Configuration)\PondSharp.UserScripts.xml;$(ProjectDir)SampleProject\**\*.*" Outputs="$(ProjectDir)wwwroot\sample-project.zip">
     <Message Text="Copying UserScripts DLL" Importance="high" />
-    <Copy SourceFiles="$(SolutionDir)UserScripts\bin\$(Configuration)\netstandard2.1\PondSharp.UserScripts.dll;$(SolutionDir)UserScripts\bin\$(Configuration)\PondSharp.UserScripts.xml" DestinationFolder="SampleProject\PondSharp.Examples" />
+    <Copy SourceFiles="$(ProjectDir)\..\UserScripts\bin\$(Configuration)\netstandard2.1\PondSharp.UserScripts.dll;$(ProjectDir)\..\UserScripts\bin\$(Configuration)\PondSharp.UserScripts.xml" DestinationFolder="SampleProject\PondSharp.Examples" />
     <Message Text="Creating Sample Project ZIP" Importance="high" />
     <ZipDirectory DestinationFile="$(ProjectDir)wwwroot\sample-project.zip" SourceDirectory="SampleProject" Overwrite="true" />
   </Target>

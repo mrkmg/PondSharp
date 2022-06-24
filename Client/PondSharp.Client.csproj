@@ -33,7 +33,7 @@
     <TypeScriptFiles Include="$(ProjectDir)ts\**\*.*" />
     <CompiledJavascriptFiles Include="$(ProjectDir)wwwroot\js\main.*;$(ProjectDir)wwwroot\js\vendors.*;$(ProjectDir)wwwroot\js\ttf\codicon.ttf" />
   </ItemGroup>
-
+  
   <ItemGroup>
     <None Remove="wwwroot\user-scripts\**" />
     <None Remove="wwwroot\js\**" />
@@ -64,6 +64,12 @@
     <ZipDirectory DestinationFile="$(ProjectDir)wwwroot\sample-project.zip" SourceDirectory="SampleProject" Overwrite="true" />
   </Target>
   
+  <Target Name="InstallNPMDependencies" BeforeTargets="BeforeCompile;BuildWebAssets">
+    <Message Text="Installing NPM Dependencies" Importance="high" />
+    <Exec Command="npm ci" Condition="$(Configuration) == 'Release'" />
+    <Exec Command="npm install" Condition="$(Configuration) == 'Debug'" />
+  </Target>
+  
   <Target Name="BuildWebAssets" BeforeTargets="BeforeCompile" Inputs="@(TypeScriptFiles)" Outputs="@(CompiledJavascriptFiles)">
     <Message Text="Running NPM Build" Importance="high" />
     <Exec Command="npm run build:release" Condition="$(Configuration) == 'Release'" />
@@ -73,6 +79,7 @@
   <Target Name="CleanWeb" BeforeTargets="Clean">
     <Message Text="Cleaning" />
     <RemoveDir Directories="$(ProjectDir)wwwroot\js;$(ProjectDir)\wwwroot\user-scripts" />
+    <RemoveDir Directories="$(ProjectDir)node_modules" />
     <Delete Files="$(ProjectDir)wwwroot\sample-project.zip" />
   </Target>
 </Project>

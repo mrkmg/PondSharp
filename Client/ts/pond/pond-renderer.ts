@@ -157,21 +157,18 @@ export class PondRenderer {
     processEntityChangeRequestsRaw(pointer: any) {        
         const length = win.Blazor.platform.getArrayLength(pointer);
         for (let i = 0; i < length; i++) {
-            const entryPtr = win.Blazor.platform.getArrayEntryPtr(pointer, i, 16);
-            const id = win.Blazor.platform.readInt32Field(entryPtr, 0);
+            const {entryPtr, id, type} = readEntityChangeHeader(pointer, i);
             if (!this.entities[id]) continue;
-            const type = win.Blazor.platform.readInt32Field(entryPtr, 4);
             switch (type) {
-                case 1:
-                    const x = win.Blazor.platform.readInt32Field(entryPtr, 8);
-                    const y = win.Blazor.platform.readInt32Field(entryPtr, 12);
+                case EntityChangeType.Move:
+                    const {x,y} = readEntityMoveData(entryPtr);
                     this.moveEntity(id, x, y);
                     break;
-                case 2:
-                    const color = win.Blazor.platform.readInt32Field(entryPtr, 8);
+                case EntityChangeType.Color:
+                    const color = readEntityColorData(entryPtr);
                     this.changeEntityColor(id, color);
                     break;
-                case 0: // None, no more updates in this memory
+                case EntityChangeType.None: // None, no more updates in this memory
                     return true;
                 default:
                     throw new Error("unknown type");
@@ -179,4 +176,27 @@ export class PondRenderer {
         }
         return true;
     }
+}
+
+enum EntityChangeType {
+    None = 0,
+    Move = 1,
+    Color = 2,
+}
+
+function readEntityChangeHeader(pointer: any, offset: number): {entryPtr: any, id: number, type: EntityChangeType} {
+    const entryPtr = win.Blazor.platform.getArrayEntryPtr(pointer, offset, 16);
+    const id = win.Blazor.platform.readInt32Field(entryPtr, 0);
+    const type = win.Blazor.platform.readInt32Field(entryPtr, 4);
+    return {entryPtr, id, type};
+}
+
+function readEntityMoveData(entryPtr: any): {x: number, y: number} {
+    const x = win.Blazor.platform.readInt32Field(entryPtr, 8);
+    const y = win.Blazor.platform.readInt32Field(entryPtr, 12);
+    return {x,y};
+}
+
+function readEntityColorData(entryPtr: any): number {
+    return win.Blazor.platform.readInt32Field(entryPtr, 8);
 }

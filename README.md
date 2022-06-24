@@ -16,3 +16,32 @@ A tech demo of in-browser C# (.NET Standard) compilation and PixiJS WebGL.
 **When:** © 2020 Kevin Gravier (MIT License).
 
 **Why:** This was made mostly out of curiosity of the ability to compile and run c# in the browser with Blazor. This may or may not turn into something more.
+
+
+------
+
+How to Run
+----------
+
+You need:
+- This project cloned.
+- NodeJS (I use v16, but should work with many versions of Node)
+- .net6 SDK
+
+Install node dependencies
+
+    cd Client
+    npm install
+
+Run app
+
+    cd Client
+    dotnet run
+
+Publish
+
+    cd Client
+    dotnet publish -c Release -o ../Build
+
+After the publish command is finished, you can host the project in Build/wwwroot
+

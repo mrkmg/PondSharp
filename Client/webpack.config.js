@@ -3,6 +3,8 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 module.exports = (env) => {
     return {
+        performance: { hints: false },
+        mode: env.release ? "production" : "development",
         devtool: env.release ? 'hidden-source-map' : 'cheap-source-map',
         watchOptions: {
             ignored: ["node_modules/**"]

@@ -3,15 +3,21 @@ import * as PIXI from "pixi.js";
 const win: typeof window & {Blazor: any} = window as any;
 
 export class PondRenderer {
+    private pondRef: any;
     private element: HTMLDivElement;
     private application: PIXI.Application;
     private entities: Record<number, PIXI.Container> = {};
+    private entityHolder: PIXI.Container;
     private fps: PIXI.Text;
+    private cursor: PIXI.Graphics;
     private gridSize: number;
     private width: number;
     private height: number;
+    private isMouseDown = false;
+    private lastMouseLocation: {x: number, y: number};
     
-    public constructor(element: HTMLElement, width: number, height: number, gridSize: number) {
+    public constructor(pondRef: any, element: HTMLElement, width: number, height: number, gridSize: number) {
+        this.pondRef = pondRef;
         this.element = element as HTMLDivElement;
         this.width = width;
         this.height = height;
@@ -30,17 +36,73 @@ export class PondRenderer {
         // noinspection JSSuspiciousNameCombination
         this.application = new PIXI.Application({
             width: this.width * this.gridSize,
-            height: this.height * this.gridSize
+            height: this.height * this.gridSize,
         });
+        this.application.renderer.plugins.interaction.cursorStyles.default = "none";
         this.element.appendChild(this.application.view);
         this.application.stage.x = this.application.view.width / 2;
         this.application.stage.y = this.application.view.height / 2;
+        this.application.stage.width = this.application.view.width;
+        this.application.stage.height = this.application.view.height;
         this.application.ticker.add(() => this.onTick());
+        this.entityHolder = new PIXI.Container();
+        this.application.stage.addChild(this.entityHolder);
 
         this.fps = new PIXI.Text("FPS: ??", {fill: 0xAAFFAA, fontSize: 8});
         this.fps.x = -this.application.view.width/2;
         this.fps.y = -this.application.view.height/2;
         this.application.stage.addChild(this.fps);
+        
+        this.cursor = new PIXI.Graphics();
+        this.cursor.beginFill(0xFFFFFF);
+        this.cursor.drawCircle(this.gridSize/2, this.gridSize/2, this.gridSize/2);
+        this.cursor.endFill();
+        this.cursor.position.x = 0;
+        this.cursor.position.y = 0;
+        
+        this.application.stage.addChild(this.cursor);
+        this.application.stage.interactive = true;
+        
+        this.application.view.addEventListener("mousemove", e => this.onMouseMove(e));
+        this.application.view.addEventListener("mousedown", e => this.onMouseDown(e));
+        this.application.view.addEventListener("mouseup", e => this.onMouseUp(e));
+    }
+    
+    private onMouseMove(e: MouseEvent) {
+        const gridLocation = this.getGridPosition(e);
+        this.cursor.position.x = gridLocation.x * this.gridSize;
+        this.cursor.position.y = gridLocation.y * this.gridSize;
+        if (this.isMouseDown && (this.lastMouseLocation.x !== gridLocation.x || this.lastMouseLocation.y !== gridLocation.y)) {
+            this.onClick(gridLocation.x, gridLocation.y);
+        }
+        this.lastMouseLocation = gridLocation;
+    }
+    
+    private onMouseDown(e:  MouseEvent) {
+        e.stopPropagation();
+        this.isMouseDown = true;
+        const gridLocation = this.getGridPosition(e);
+        this.lastMouseLocation = gridLocation;
+        this.onClick(gridLocation.x, gridLocation.y);
+    }
+    
+    private onMouseUp(e:  MouseEvent) {
+        e.stopPropagation();
+        this.isMouseDown = false;
+    }
+    
+    private onClick(x: number, y: number) {
+        this.pondRef.invokeMethodAsync("OnClick", x, y);
+    }
+    
+    private getGridPosition(e: MouseEvent): {x: number, y: number}
+    {
+        const stageXRaw = e.offsetX - this.application.stage.x;
+        const stageYRaw = e.offsetY - this.application.stage.y;
+        return {
+            x: Math.round(stageXRaw/this.gridSize),
+            y: Math.round(stageYRaw/this.gridSize)
+        }
     }
 
     private onTick() {
@@ -62,11 +124,11 @@ export class PondRenderer {
         const graphic = new PIXI.Graphics();
         graphic.beginFill(color);
         graphic.drawCircle(this.gridSize/2, this.gridSize/2, this.gridSize/2);
+        graphic.endFill();
         graphic.position.x = x * this.gridSize;
         graphic.position.y = y * this.gridSize;
-        graphic.endFill();
         this.entities[id] = graphic;
-        this.application.stage.addChild(graphic);
+        this.entityHolder.addChild(graphic);
     }
     
     destroyEntity(id: number) {

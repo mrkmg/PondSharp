@@ -7,12 +7,15 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace PondSharp.Client.IDE
 {
     public sealed class CSharpClassCompiler
     {
         private readonly Uri _baseUri;
+        private readonly IBinaryCache _binaryCache;
         private List<MetadataReference> _references;
         private Assembly _assembly;
 
@@ -32,20 +35,37 @@ namespace PondSharp.Client.IDE
 
         public bool HasAssembly => _assembly != null;
         
-        public static async Task<CSharpClassCompiler> Make(Uri baseUri)
+        public static async Task<CSharpClassCompiler> Make(Uri baseUri, IBinaryCache binaryCache)
         {
-            var compiler = new CSharpClassCompiler(baseUri);
+            var compiler = new CSharpClassCompiler(baseUri, binaryCache);
             await compiler.SetReferences().ConfigureAwait(false);
             return compiler;
         }
 
-        private CSharpClassCompiler(Uri baseUri)
+        private CSharpClassCompiler(Uri baseUri, IBinaryCache binaryCache)
         {
+            _binaryCache = binaryCache;
             _baseUri = baseUri;
         }
 
-        public void Compile(Dictionary<string, string> sourceTexts)
+        public async Task Compile(Dictionary<string, string> sourceTexts)
         {
+            using var hasher = SHA256.Create();
+            var combined = sourceTexts.Values
+                .Select(Encoding.UTF8.GetBytes)
+                .Select(hasher.ComputeHash)
+                .Select(Encoding.UTF8.GetString)
+                .OrderBy(s => s)
+                .Aggregate((a, b) => a + b);
+            var hash = Encoding.UTF8.GetString(hasher.ComputeHash(Encoding.UTF8.GetBytes(combined)));
+
+            if (await _binaryCache.HasBinary(hash).ConfigureAwait(false))
+            {
+                var bytes = await _binaryCache.GetBinary(hash).ConfigureAwait(false);
+                _assembly = Assembly.Load(bytes);
+                return;
+            }
+            
             _assembly = null;
             var assemblyName = Path.GetRandomFileName();
             var options = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest);
@@ -58,9 +78,9 @@ namespace PondSharp.Client.IDE
                 trees,
                 _references,
                 // must use concurrentBuild:false in blazor due to threading limitations
-                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, concurrentBuild: false) 
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, concurrentBuild: true) 
             );
-            using var ms = new MemoryStream();
+            await using var ms = new MemoryStream();
             var result = compilation.Emit(ms);
             var errors = result.Diagnostics
                 .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
@@ -70,9 +90,9 @@ namespace PondSharp.Client.IDE
                 throw new CompileException(errors);
 
             ms.Seek(0, SeekOrigin.Begin);
+            var byteArray = ms.ToArray();
+            await _binaryCache.StoreBinary(hash, byteArray).ConfigureAwait(false);
             _assembly = Assembly.Load(ms.ToArray());
-            
-            
         }
 
         private static string GetDiagnosticError(Diagnostic diagnostic)

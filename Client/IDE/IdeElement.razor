@@ -2,6 +2,8 @@
 @using PondSharp.UserScripts
 @using System.Reflection
 @using System.Net.Http.Headers
+@using System.IO
+@using Blazored.LocalStorage
 <!-- ReSharper disable once InconsistentNaming -->
 @inject IJSRuntime JSRuntime
 @inject Blazored.LocalStorage.ILocalStorageService LocalStorage
@@ -103,15 +105,15 @@
     public T CreateInstance<T>(string fullName) where T : class =>
         _compiler.New<T>(fullName);
     
-    public void Compile()
+    public Task Compile()
     {
-        _compiler.Compile(_sources);
+        return _compiler.Compile(_sources);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
-        _compiler = await CSharpClassCompiler.Make(Http.BaseAddress).ConfigureAwait(false);
+        _compiler = await CSharpClassCompiler.Make(Http.BaseAddress, new BinaryCache(LocalStorage)).ConfigureAwait(false);
         await CreateEditor().ConfigureAwait(false);
     }
     
@@ -204,7 +206,7 @@
         await SelectSource(_sources.First().Key).ConfigureAwait(false);
         try
         {
-            Compile();
+            await Compile().ConfigureAwait(false);
         } catch (CompileException){}
         StateHasChanged();
         await IsInitialized.InvokeAsync(null).ConfigureAwait(false);
@@ -274,5 +276,33 @@
     {
         public string Name { get; set; }
         public string Source { get; set; }
+    }
+
+    private class BinaryCache : IBinaryCache
+    {
+        private ILocalStorageService _localStorage;
+
+        public BinaryCache(ILocalStorageService localStorage)
+        {
+            _localStorage = localStorage;
+        }
+        
+        public Task<bool> HasBinary(string hash)
+        {
+            return _localStorage.ContainKeyAsync($"binary:{hash}").AsTask();
+        }
+
+        public async Task<byte[]> GetBinary(string hash)
+        {
+            var dataAsString = await _localStorage.GetItemAsStringAsync($"binary:{hash}");
+            return Convert.FromBase64String(dataAsString);
+            
+        }
+
+        public Task StoreBinary(string hash, byte[] binaryData)
+        {
+            var dataAsString = Convert.ToBase64String(binaryData);
+            return _localStorage.SetItemAsync($"binary:{hash}", dataAsString).AsTask();
+        }
     }
 }

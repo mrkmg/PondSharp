@@ -21,7 +21,22 @@
             </div>
         </div>
         <div class="col @(_display != DisplayType.Pond ? "d-none" : "")">
-            <PondCanvas @ref="_canvas" Width="@_pondWidth" Height="@_pondHeight" GridSize="@_gridSize"></PondCanvas>
+            <div class="row">
+                <div class="col-auto">
+                    <PondCanvas @ref="_canvas" Width="@_pondWidth" Height="@_pondHeight" GridSize="@_gridSize"></PondCanvas>
+                </div>
+                <div class="col">
+                    @if (_availableEntityTypes.Any())
+                    {
+                        <div class="btn-group btn-group-vertical">
+                            @foreach (var type in _availableEntityTypes)
+                            {
+                                <button class="btn btn-outline-primary @(type.FullName == _selectedType ? "active" : "")" @onclick="@(() => _selectedType = type.FullName)">@type.ShortName</button>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
             <div class="row">
                 <div class="col-auto">
                     <div class="btn-group bottom-tabs">
@@ -29,28 +44,6 @@
                         <button class="btn btn-warning" @onclick="StopPond" disabled="@(!IsRunning)">Stop</button>
                         <button class="btn btn-danger" @onclick="Reset" disabled="@(!_ideElement?.IsCompiled)">Reset</button>
                     </div>
-                </div>
-                <div class="col">
-                    @if (_availableEntityTypes.Any())
-                    {
-                        <div class="input-group bottom-tabs">
-                            <div class="input-group-prepend">
-                                <button class="btn btn-outline-primary"
-                                        @onclick="@(e => CreateEntity(_selectedType))"
-                                        disabled="@(!_ideElement.IsCompiled)">Create</button>
-                            </div>
-                            <input class="form-control input-count" type="number" @bind="_countToCreate[_selectedType]" min="1"/>
-                            <select class="form-control" @bind="_selectedType">
-                                @foreach (var availableEntity in _availableEntityTypes)
-                                {
-                                    <option value="@availableEntity.FullName">@availableEntity.ShortName</option>
-                                }
-                            </select>
-                            <div class="input-group-append">
-                                <span class="input-group-text">Entities</span>
-                            </div>
-                        </div>
-                    }
                 </div>
                 <div class="col text-monospace text-center">
                     <span>@_output</span> |
@@ -145,7 +138,7 @@
         var size = ((IJSInProcessRuntime)JsRuntime).Invoke<int[]>("getSize");
         if (size.Length == 2)
         {
-            _pondWidth = (size[0] - 95) / _gridSize;
+            _pondWidth = (size[0] - 250) / _gridSize;
             _pondHeight = (size[1] - 250) / _gridSize;
         }
 
@@ -222,6 +215,11 @@
         if (_manager != null || _engine == null || _canvas == null) return;
         
         _manager = new PondManager(_engine, _canvas);
+        _canvas.OnClick += (sender, args) =>
+        {
+            Console.WriteLine($"N: {args.X},{args.Y}");
+            _manager.InitializeAndCreateEntity(_ideElement.CreateInstance<Entity>(_selectedType), args.X, args.Y);
+        };
     }
 
     private void CreateEntity(string fullName, int? count = null)
@@ -250,7 +248,7 @@
             StateHasChanged();
             await Task.Delay(TimeSpan.FromMilliseconds(100)).ConfigureAwait(false);
             await _ideElement.TriggerSave().ConfigureAwait(false);
-            _ideElement.Compile();
+            await _ideElement.Compile().ConfigureAwait(false);
             ReadAssemblyInfo();
             await StartPond().ConfigureAwait(false);
             _display = DisplayType.Pond;

@@ -92,15 +92,23 @@ namespace PondSharp.Client.Pond
             return color.ToArgb();
         }
 
-        public void InitializeAndCreateEntity(Entity entity)
+        public void InitializeAndCreateEntity(Entity entity, int? x = null, int? y = null)
         {
             int xPos;
             int yPos;
-            do
+            if (x == null || y == null)
             {
-                xPos = Random.Next(_pondEngine.MinX, _pondEngine.MaxX);
-                yPos = Random.Next(_pondEngine.MinY, _pondEngine.MaxY);
-            } while (_pondEngine.GetEntityAt(xPos, yPos) != null);
+                do
+                {
+                    xPos = Random.Next(_pondEngine.MinX, _pondEngine.MaxX);
+                    yPos = Random.Next(_pondEngine.MinY, _pondEngine.MaxY);
+                } while (_pondEngine.GetEntityAt(xPos, yPos) != null);
+            }
+            else
+            {
+                xPos = x.Value;
+                yPos = y.Value;
+            }
             _pondEngine.InsertEntity(entity, _nextId++, xPos, yPos, RandomColor());
         }
 

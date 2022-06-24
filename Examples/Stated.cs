@@ -192,7 +192,7 @@ namespace PondSharp.Examples
             {
                 CurrentState = CurrentStateType.MovingTowardCenter;
                 CurrentTaskTimeout = 1000;
-                CurrentMaxStuckDistance = (int)Math.Sqrt(TotalEntities / Math.PI);
+                CurrentMaxStuckDistance = (int)(1.3 * Math.Sqrt(TotalEntities / Math.PI));
                 
                 foreach (var follower in Followers)
                 {

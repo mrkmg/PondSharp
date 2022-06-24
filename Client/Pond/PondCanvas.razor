@@ -3,7 +3,7 @@
 @using System.Runtime.InteropServices
 @inject IJSRuntime JsRuntime;
 
-<div @ref="_pondHolder" style="width: @(Width * GridSize)px; height: @(Height * GridSize)px; padding: 0"></div>
+<div @ref="_pondHolder" class="border border-light" style="width: @(Width * GridSize + 2)px; height: @(Height * GridSize + 2)px; padding: 0"></div>
 
 @code {
     private const int QueueLength = 2000;
@@ -20,6 +20,8 @@
     [Parameter][Required]
     public int GridSize { get; set; }
 
+    public event EventHandler<ClickArgs> OnClick;
+
     private string _id = string.Empty;
     private ElementReference _pondHolder;
     private string Method(string method) => $"ponds.{_id}.{method}";
@@ -32,8 +34,14 @@
     {
         if (firstRender)
         {
-            _id = await JsRuntime.InvokeAsync<string>("createPond", _pondHolder, Width, Height, GridSize);
+            var jsInterface = new JsInterface(EmitOnClick);
+            _id = await JsRuntime.InvokeAsync<string>("createPond", DotNetObjectReference.Create(jsInterface), _pondHolder, Width, Height, GridSize);
         }
+    }
+
+    private void EmitOnClick(int x, int y)
+    {
+        OnClick?.Invoke(this, new ClickArgs(x, y));
     }
     
     public void CreateEntity(int entityId, int x, int y, int color) => 
@@ -106,5 +114,30 @@
         [FieldOffset(12)] public int Y;
         
         [FieldOffset(8)] public int Color;
+    }
+
+    private class JsInterface
+    {
+        Action<int, int> _onClickHandler;
+
+        public JsInterface(Action<int, int> onClickHandler)
+        {
+            _onClickHandler = onClickHandler;
+        }
+        
+        [JSInvokable]
+        public void OnClick(int x, int y) => _onClickHandler(x, y);
+    }
+
+    public class ClickArgs : EventArgs
+    {
+        public int X { get; }
+        public int Y { get; }
+        
+        public ClickArgs(int x, int y)
+        {
+            X = x;
+            Y = y;
+        }
     }
 }

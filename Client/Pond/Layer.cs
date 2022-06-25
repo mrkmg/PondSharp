@@ -36,7 +36,7 @@ namespace PondSharp.Client.Pond
 
             _objectBlocks = new HashSet<T>[GetBlock(MaxX, MaxY) + 1];
             for (var i = _objectBlocks.Length - 1; i >= 0; i--)
-                _objectBlocks[i] = new HashSet<T>();
+                _objectBlocks[i] = new();
         }
         
         private int GetBlock(int x, int y) => 

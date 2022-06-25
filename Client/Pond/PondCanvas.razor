@@ -6,8 +6,6 @@
 <div @ref="_pondHolder" class="border border-light" style="width: @(Width * GridSize + 2)px; height: @(Height * GridSize + 2)px; padding: 0"></div>
 
 @code {
-    private const int QueueLength = 2000;
-
     private IJSInProcessRuntime Js => (IJSInProcessRuntime) JsRuntime;
     private Microsoft.JSInterop.WebAssembly.WebAssemblyJSRuntime JsRaw => (Microsoft.JSInterop.WebAssembly.WebAssemblyJSRuntime) JsRuntime;
     
@@ -25,11 +23,13 @@
     private string _id = string.Empty;
     private ElementReference _pondHolder;
     private string Method(string method) => $"ponds.{_id}.{method}";
-    
-    private int _currentChangeRequestIndex = -1;
-    private int CurrentChangeRequestsCount => _currentChangeRequestIndex + 1;
-    private EntityChangeRequest[] _entityChangeRequests = new EntityChangeRequest[QueueLength];
+    private EntityChangeRequestQueue _changeQueue;
 
+    protected override void OnInitialized()
+    {
+        _changeQueue = new(WriteQueue);
+    }
+    
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -41,7 +41,7 @@
 
     private void EmitOnClick(int x, int y)
     {
-        OnClick?.Invoke(this, new ClickArgs(x, y));
+        OnClick?.Invoke(this, new(x, y));
     }
     
     public void CreateEntity(int entityId, int x, int y, int color) => 
@@ -50,28 +50,11 @@
     public void DestroyEntity(int entityId) =>
         Js.InvokeVoid(Method("destroyEntity"), entityId);
 
-    public void MoveEntity(int entityId, int x, int y)
-    {
-        _currentChangeRequestIndex++;
-        ref var changeReq = ref _entityChangeRequests[_currentChangeRequestIndex];
-        changeReq.EntityId = entityId;
-        changeReq.Type = EntityChangeRequestType.Position;
-        changeReq.X = x;
-        changeReq.Y = y;
-        if (CurrentChangeRequestsCount == QueueLength)
-            FlushChangeQueue();
-    }
+    public void MoveEntity(int entityId, int x, int y) => 
+        _changeQueue.MoveEntity(entityId, x, y);
 
-    public void ChangeEntityColor(int entityId, int color)
-    {
-        _currentChangeRequestIndex++;
-        ref var changeReq = ref _entityChangeRequests[_currentChangeRequestIndex];
-        changeReq.EntityId = entityId;
-        changeReq.Type = EntityChangeRequestType.Color;
-        changeReq.Color = color;
-        if (CurrentChangeRequestsCount == QueueLength)
-            FlushChangeQueue();
-    }
+    public void ChangeEntityColor(int entityId, int color) => 
+        _changeQueue.ChangeEntityColor(entityId, color);
 
     public ValueTask Start() =>
         JsRuntime.InvokeVoidAsync(Method("start"));
@@ -79,42 +62,14 @@
     public ValueTask Stop() =>
         JsRuntime.InvokeVoidAsync(Method("stop"));
 
-    public void ClearChangeQueue()
-    {
-        Console.WriteLine(_entityChangeRequests.Length);
-        Console.WriteLine(_currentChangeRequestIndex);
-        for (var i = 0; i <= _currentChangeRequestIndex; i++) _entityChangeRequests[i].Type = EntityChangeRequestType.None;
-        _currentChangeRequestIndex = -1;
-    }
+    public void WriteQueue(IReadOnlyCollection<EntityChangeRequest> queue) => 
+        JsRaw.InvokeUnmarshalled<IReadOnlyCollection<EntityChangeRequest>, bool>(Method("processEntityChangeRequestsRaw"), queue);
 
-    public void FlushChangeQueue()
-    {
-        if (_currentChangeRequestIndex == -1) return;
-        
-        JsRaw.InvokeUnmarshalled<EntityChangeRequest[], bool>(Method("processEntityChangeRequestsRaw"), _entityChangeRequests);
+    public void FlushChangeQueue() => _changeQueue.Flush();
 
-        for (var i = 0; i <= _currentChangeRequestIndex; i++) _entityChangeRequests[i].Type = EntityChangeRequestType.None;
-        _currentChangeRequestIndex = -1;
-    }
-    
-    private enum EntityChangeRequestType
-    {
-        None = 0,
-        Position = 1,
-        Color = 2,
-    }
-    
-    [StructLayout(LayoutKind.Explicit, Pack = 16, Size = 16)]
-    private struct EntityChangeRequest
-    {
-        [FieldOffset(0)] public int EntityId;
-        [FieldOffset(4)] public EntityChangeRequestType Type;
-        
-        [FieldOffset(8)] public int X;
-        [FieldOffset(12)] public int Y;
-        
-        [FieldOffset(8)] public int Color;
-    }
+    public void Clear() =>
+    // TODO make this clear entities too
+        _changeQueue.Reset();
 
     private class JsInterface
     {

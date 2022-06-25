@@ -1,3 +1,4 @@
+import "../css/app.scss";
 import {PondRenderer} from "./pond/pond-renderer";
 import {CodeEditor} from "./code/code-editor";
 

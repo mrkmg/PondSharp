@@ -32,9 +32,22 @@
     <ExampleFiles Include="$(ProjectDir)..\Examples\*.cs" />
     <TypeScriptFiles Include="$(ProjectDir)ts\**\*.*" />
     <CompiledJavascriptFiles Include="$(ProjectDir)wwwroot\js\main.*;$(ProjectDir)wwwroot\js\vendors.*;$(ProjectDir)wwwroot\js\ttf\codicon.ttf" />
+    <TypeScriptFiles Include="wwwroot-src\ts\code\code-editor.ts" />
+    <TypeScriptFiles Include="wwwroot-src\ts\main.ts" />
+    <TypeScriptFiles Include="wwwroot-src\ts\pond\pond-renderer.ts" />
   </ItemGroup>
   
   <ItemGroup>
+    <Content Include="wwwroot-src\css\vendor\bootstrap.min.css" />
+    <Content Include="wwwroot-src\css\vendor\FONT-LICENSE" />
+    <Content Include="wwwroot-src\css\vendor\ICON-LICENSE" />
+    <Content Include="wwwroot-src\css\vendor\open-iconic-bootstrap.min.css" />
+    <Content Include="wwwroot-src\fonts\open-iconic.eot" />
+    <Content Include="wwwroot-src\fonts\open-iconic.otf" />
+    <Content Include="wwwroot-src\fonts\open-iconic.svg" />
+    <Content Include="wwwroot-src\fonts\open-iconic.ttf" />
+    <Content Include="wwwroot-src\fonts\open-iconic.woff" />
+    <None Include="wwwroot-src\css\app.scss" />
     <None Remove="wwwroot\user-scripts\**" />
     <None Remove="wwwroot\js\**" />
     <None Remove="SampleProject\**" />
@@ -45,6 +58,19 @@
     <EmbeddedResource Remove="wwwroot\js\**" />
     <EmbeddedResource Remove="wwwroot\user-scripts\**" />
     <Content Remove="SampleProject\**" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="wwwroot\js\fonts\codicon.ttf" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\fonts\open-iconic.eot" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\fonts\open-iconic.otf" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\fonts\open-iconic.svg" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\fonts\open-iconic.ttf" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\fonts\open-iconic.woff" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\main.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\main.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\vendors.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\vendors.js.map" />
   </ItemGroup>
   
   <Target Name="CopyExampleScriptsToUserScripts" BeforeTargets="BeforeCompile" Inputs="@(ExampleFiles)" Outputs="@(ExampleFiles->'$(ProjectDir)\wwwroot\user-scripts\%(RecursiveDir)%(Filename)%(Extension).txt')">

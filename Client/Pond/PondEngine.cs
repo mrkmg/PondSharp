@@ -19,8 +19,8 @@ namespace PondSharp.Client.Pond
         }
 
         private Layer<Entity> _entityLayer;
-        private List<Entity> _entities = new List<Entity>();
-        private readonly Dictionary<int, Entity> _entitiesById = new Dictionary<int, Entity>();
+        private List<Entity> _entities = new();
+        private readonly Dictionary<int, Entity> _entitiesById = new();
         
         public override IEnumerable<IEntity> Entities => _entities;
         public override IEntity GetEntity(int entityId) => _entitiesById[entityId];
@@ -31,7 +31,7 @@ namespace PondSharp.Client.Pond
         
         private void ResetSize()
         {
-            _entityLayer = new Layer<Entity>(MinX, MinY, MaxX, MaxY);
+            _entityLayer = new(MinX, MinY, MaxX, MaxY);
         }
 
         private IEnumerable<IEntity> GetEntitiesAround(int centerX, int centerY, int dist)
@@ -55,7 +55,7 @@ namespace PondSharp.Client.Pond
 
         public void InsertEntity(Entity entity, int id, int x = 0, int y = 0, int color = 0xFFFFFF, int viewDistance = 0)
         {
-            InitializeEntity(entity, new EntityInitialization(id)
+            InitializeEntity(entity, new(id)
             {
                 X = x, 
                 Y = y, 
@@ -107,7 +107,7 @@ namespace PondSharp.Client.Pond
                 }
             }
             _entitiesById.Clear();
-            _entityLayer = new Layer<Entity>(MinX, MinY, MaxX, MaxY);
+            _entityLayer = new(MinX, MinY, MaxX, MaxY);
         }
     }
 }

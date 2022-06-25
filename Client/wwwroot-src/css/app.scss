@@ -1,0 +1,50 @@
+﻿@use 'vendor/bootstrap.min.css';
+@use 'vendor/open-iconic-bootstrap.min.css';
+@use 'blazor.scss';
+
+.editor-files {
+    border-radius: .2rem .2rem 0 0;
+    overflow-x: auto;
+}
+
+.editor-prompt {
+    .btn, .form-control, .input-group-prepend, .input-group-append {
+        border-radius: 0 !important;
+    }
+}
+
+.btn-icon {
+    padding: 2px !important;
+    font-size: 8px !important;
+}
+
+.main-subheading {
+    font-size: 12px;
+    color: #5a6268;
+}
+
+.input-count {
+    flex: 0.3 1 !important;
+}
+
+.btn-group.top-tabs .btn {
+    &:first-child {
+        border-bottom-left-radius: 0;
+    }
+    &:last-child {
+        border-bottom-right-radius: 0;
+    }
+}
+
+.bottom-tabs {
+    .btn-group .btn:first-child,
+    .input-group > *:first-child,
+    .input-group .btn {
+        border-top-left-radius: 0;
+    }
+    .btn-group .btn:last-child,
+    .input-group > *:last-child,
+    .input-group .btn {
+        border-top-right-radius: 0;
+    }
+}

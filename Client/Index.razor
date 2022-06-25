@@ -23,7 +23,10 @@
         <div class="col @(_display != DisplayType.Pond ? "d-none" : "")">
             <div class="row">
                 <div class="col-auto">
-                    <PondCanvas @ref="_canvas" Width="@_pondWidth" Height="@_pondHeight" GridSize="@_gridSize"></PondCanvas>
+                    @if (_engine is not null)
+                    {
+                        <PondCanvas @ref="_canvas" Width="@_pondWidth" Height="@_pondHeight" GridSize="@_gridSize"></PondCanvas>
+                    }
                 </div>
                 <div class="col">
                     @if (_availableEntityTypes.Any())
@@ -38,11 +41,19 @@
                 </div>
             </div>
             <div class="row">
-                <div class="col-auto">
-                    <div class="btn-group bottom-tabs">
-                        <button class="btn btn-success" @onclick="StartPond" disabled="@(!_ideElement?.IsCompiled ?? IsRunning)">Start</button>
-                        <button class="btn btn-warning" @onclick="StopPond" disabled="@(!IsRunning)">Stop</button>
-                        <button class="btn btn-danger" @onclick="Reset" disabled="@(!_ideElement?.IsCompiled)">Reset</button>
+                <div class="col-auto bottom-tabs">
+                    <div class="btn-toolbar">
+                        <div class="btn-group">
+                            <button class="btn btn-success" @onclick="StartPond" disabled="@(!_ideElement?.IsCompiled ?? IsRunning)">Start</button>
+                            <button class="btn btn-warning" @onclick="StopPond" disabled="@(!IsRunning)">Stop</button>
+                            <button class="btn btn-danger" @onclick="Reset" disabled="@(!_ideElement?.IsCompiled)">Reset</button>
+                        </div>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                              <div class="input-group-text" id="btnGroupAddon">TPS</div>
+                            </div>
+                            <input type="number" @bind-value="TickSpeed"/>
+                        </div>
                     </div>
                 </div>
                 <div class="col text-monospace text-center">
@@ -92,27 +103,8 @@
     private IList<string> _errors = new List<string>();
     private string _selectedType = string.Empty;
 
-    private AvailableEntityEntry[] _availableEntityTypes = new AvailableEntityEntry[0];
-    
-    // private string EntityCountsByType
-    // {
-    //     get
-    //     {
-    //         if (_engine == null) return "";
-    //         var typeCounts = _availableEntityTypes.ToDictionary(a => a.FullName, a => 0);
-    //         typeCounts.Add("*Other", 0);
-    //         foreach (var entity in _engine.Entities)
-    //             typeCounts[entity.GetType().FullName ?? "*Other"]++;
-    //         
-    //         return string.Join('\n', 
-    //             typeCounts
-    //                 .Where(tc => tc.Value != 0)
-    //                 .Select(typeCount => $"{typeCount.Key}: {typeCount.Value}")
-    //         );
-    //     }
-    // }
-
-    private readonly Dictionary<string, int> _countToCreate = new Dictionary<string, int>();
+    private AvailableEntityEntry[] _availableEntityTypes = Array.Empty<AvailableEntityEntry>();
+    private readonly Dictionary<string, int> _countToCreate = new();
 
     private PondEngine _engine;
     private PondManager _manager;
@@ -129,29 +121,37 @@
 
     private bool IsRunning => _manager?.IsRunning ?? false;
     
-    private readonly Timer _debugUpdateTimer = new Timer(1000);
+    private readonly Timer _debugUpdateTimer = new(1000);
 
-    protected override void OnInitialized()
+    private double TickSpeed
+    {
+        get => Math.Round(1000/_manager?.TickSpeed ?? 0);
+        set
+        {
+            if (_manager is not null) _manager.TickSpeed = 1000/value;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
     {
         _debugUpdateTimer.Elapsed += (_,__) => StateHasChanged();
 
-        var size = ((IJSInProcessRuntime)JsRuntime).Invoke<int[]>("getSize");
+        var size = await JsRuntime.InvokeAsync<int[]>("getSize");
         if (size.Length == 2)
         {
             _pondWidth = (size[0] - 250) / _gridSize;
             _pondHeight = (size[1] - 250) / _gridSize;
         }
 
-        _engine = new PondEngine(_pondWidth, _pondHeight);
+        _engine = new(_pondWidth, _pondHeight);
         TryCreatePondManager();
     }
     
     protected override void OnAfterRender(bool firstRender)
     {
-        if (!firstRender) return;
-        
         TryCreatePondManager();
-        if (_ideElement.IsCompiled)
+        
+        if (firstRender && _ideElement.IsCompiled)
             ReadAssemblyInfo();
     }
 
@@ -175,7 +175,7 @@
             PondDefaultsAttribute defaults = null;
             foreach (var attribute in Attribute.GetCustomAttributes(type)) 
                 if (attribute is PondDefaultsAttribute d) defaults = d;
-            defaults ??= new PondDefaultsAttribute();
+            defaults ??= new();
             return new AvailableEntityEntry
             {
                 Type = type,
@@ -214,7 +214,7 @@
     {
         if (_manager != null || _engine == null || _canvas == null) return;
         
-        _manager = new PondManager(_engine, _canvas);
+        _manager = new(_engine, _canvas);
         _canvas.OnClick += (sender, args) =>
         {
             Console.WriteLine($"N: {args.X},{args.Y}");
@@ -271,6 +271,7 @@
 
     private async Task StartPond()
     {
+        if (_manager is null) return;
         await _manager.Start().ConfigureAwait(false);
         _debugUpdateTimer.Start();
         _output = "Running";
@@ -278,6 +279,7 @@
 
     private async Task StopPond()
     {
+        if (_manager is null) return;
         await _manager.Stop().ConfigureAwait(false);
         _debugUpdateTimer.Stop();
         _output = "Running";
@@ -289,7 +291,7 @@
         {
             _canvas.DestroyEntity(instance.Id);
         }
-        _canvas.ClearChangeQueue();
+        _canvas.Clear();
         _engine.ClearAllEntities();
     }
 

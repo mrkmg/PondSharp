@@ -14,17 +14,22 @@ namespace PondSharp.Client.Pond
         
         private readonly Timer _tickTimer;
         private DateTime _lastTime = DateTime.Now;
-        private static readonly Random Random = new Random();
+        private static readonly Random Random = new();
         private int _nextId;
         
         public double CurrentTickTime = 1;
         public bool IsRunning => _tickTimer.Enabled;
 
+        public double TickSpeed
+        {
+            get => _tickTimer.Interval;
+            set => _tickTimer.Interval = value;
+        }
+
         public PondManager([NotNull] PondEngine engine, [NotNull] PondCanvas canvas)
         {
-            _tickTimer = new Timer(16); // 60 tps (1000/60)
-            //_tickTimer = new Timer(33); // 30 tps (1000/30)
-            _tickTimer.Elapsed += (sender, args) => Tick();
+            _tickTimer = new(16); //60tps 
+            _tickTimer.Elapsed += (_, _) => Tick();
             
             _pondCanvas = canvas;
             _pondEngine = engine;
@@ -47,7 +52,7 @@ namespace PondSharp.Client.Pond
             catch (Exception e)
             {
                 Console.WriteLine($"Tick Exception: ${e.Message} ${e.StackTrace}");
-                _pondCanvas.ClearChangeQueue();
+                _pondCanvas.Clear();
                 Stop().RunSynchronously();
             }
 

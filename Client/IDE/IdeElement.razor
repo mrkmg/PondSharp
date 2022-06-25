@@ -63,7 +63,7 @@
 
 @code {
     private CSharpClassCompiler _compiler;
-    private Dictionary<string, string> _sources = new Dictionary<string, string>();
+    private Dictionary<string, string> _sources = new();
     private string _selectedSource = string.Empty;
     private enum EditorPromptType {None, Delete, Add, Rename}
     private EditorPromptType _editorPromptType = EditorPromptType.None;

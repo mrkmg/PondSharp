@@ -29,7 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ExampleFiles Include="$(SolutionDir)Examples\*.cs" />
+    <ExampleFiles Include="$(ProjectDir)..\Examples\*.cs" />
     <TypeScriptFiles Include="$(ProjectDir)ts\**\*.*" />
     <CompiledJavascriptFiles Include="$(ProjectDir)wwwroot\js\main.*;$(ProjectDir)wwwroot\js\vendors.*;$(ProjectDir)wwwroot\js\ttf\codicon.ttf" />
   </ItemGroup>

@@ -57,13 +57,21 @@ namespace PondSharp.Client.IDE
                 .Select(Encoding.UTF8.GetString)
                 .OrderBy(s => s)
                 .Aggregate((a, b) => a + b);
-            var hash = Encoding.UTF8.GetString(hasher.ComputeHash(Encoding.UTF8.GetBytes(combined)));
+            var hash = Convert.ToBase64String(hasher.ComputeHash(Encoding.UTF8.GetBytes(combined)));
 
-            if (await _binaryCache.HasBinary(hash).ConfigureAwait(false))
+            try
             {
-                var bytes = await _binaryCache.GetBinary(hash).ConfigureAwait(false);
-                _assembly = Assembly.Load(bytes);
-                return;
+                if (await _binaryCache.HasBinary(hash).ConfigureAwait(false))
+                {
+                    var bytes = await _binaryCache.GetBinary(hash).ConfigureAwait(false);
+                    _assembly = Assembly.Load(bytes);
+                    return;
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
             }
             
             _assembly = null;

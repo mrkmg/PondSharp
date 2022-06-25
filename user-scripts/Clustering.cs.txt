@@ -19,7 +19,6 @@ namespace PondSharp.Examples
         private const int WanderingColor = 0xFFFFFF;  // White
         private const int JoiningColor = 0x5555FF;    // Blue
         private const int SeparatingColor = 0xFFFF55; // Yellow
-        private const int FleeingColor = 0xFF5555;    // Red
         private const int RestingColor = 0x55FF55;    // Green
 
         private int ThinkCooldown;
@@ -40,9 +39,8 @@ namespace PondSharp.Examples
             
             if (MoveTo(X + ForceX, Y + ForceY)) return;
             
-            // reverse if stuck
-            ForceX = -ForceX;
-            ForceY = -ForceY;
+            // if stuck
+            ChooseRandomDirection();
             ThinkCooldown = 10;
         }
 
@@ -66,21 +64,6 @@ namespace PondSharp.Examples
             ThinkCooldown = RndThinkDelay(200, 2, 100);
         }
 
-        private bool CheckFlee(IList<IEntity> entities)
-        {
-            if (!entities.Any(e => EntityDist(this, e) < 3)) 
-                return false;
-            
-            var closestEntity = entities
-                .OrderBy(e => EntityDist(this, e))
-                .First();
-            (ForceX, ForceY) = GetForceDirection(X - closestEntity.X, Y - closestEntity.Y);
-            if (ForceX == 0 && ForceY == 0) ChooseRandomDirection();
-            ThinkCooldown = RndThinkDelay(30, 6);
-            ChangeColor(FleeingColor);
-            return true;
-        }
-
         private void ChooseForceDirections(IList<IEntity> entities)
         {
             if (entities.Count == 0) 
@@ -94,7 +77,7 @@ namespace PondSharp.Examples
                 .Aggregate<IEntity, (int X, int Y)>((0, 0), (a, e) => (a.X + e.X/total, a.Y + e.Y/total));
             var distanceToCenter = Dist(X, Y, groupCenterX, groupCenterY);
             
-            if (entities.Count > 5)
+            if (entities.Count > 15)
             {
                 ChangeColor(SeparatingColor);
                 // Move away from group center
@@ -111,7 +94,7 @@ namespace PondSharp.Examples
             {
                 ChangeColor(RestingColor);
                 (ForceX, ForceY) = (0, 0);
-                ThinkCooldown = RndThinkDelay(10);
+                ThinkCooldown = RndThinkDelay(30);
             }
         }
     }

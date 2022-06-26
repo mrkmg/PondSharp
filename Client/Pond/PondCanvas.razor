@@ -23,7 +23,7 @@
     private string _id = string.Empty;
     private ElementReference _pondHolder;
     private string Method(string method) => $"ponds.{_id}.{method}";
-    private EntityChangeRequestQueue _changeQueue;
+    private ChangeRequestQueue<EntityChangeRequest> _changeQueue;
 
     protected override void OnInitialized()
     {
@@ -51,10 +51,10 @@
         Js.InvokeVoid(Method("destroyEntity"), entityId);
 
     public void MoveEntity(int entityId, int x, int y) => 
-        _changeQueue.MoveEntity(entityId, x, y);
+        _changeQueue.Next().ForPosition(entityId, x, y);
 
     public void ChangeEntityColor(int entityId, int color) => 
-        _changeQueue.ChangeEntityColor(entityId, color);
+        _changeQueue.Next().ForColor(entityId, color);
 
     public ValueTask Start() =>
         JsRuntime.InvokeVoidAsync(Method("start"));
@@ -62,7 +62,7 @@
     public ValueTask Stop() =>
         JsRuntime.InvokeVoidAsync(Method("stop"));
 
-    public void WriteQueue(IReadOnlyCollection<EntityChangeRequest> queue) => 
+    private void WriteQueue(IReadOnlyCollection<EntityChangeRequest> queue) => 
         JsRaw.InvokeUnmarshalled<IReadOnlyCollection<EntityChangeRequest>, bool>(Method("processEntityChangeRequestsRaw"), queue);
 
     public void FlushChangeQueue() => _changeQueue.Flush();

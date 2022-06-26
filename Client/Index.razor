@@ -3,9 +3,11 @@
 @using PondSharp.Client.Pond
 @using PondSharp.Client.IDE
 @using System.Timers
+@using Microsoft.Extensions.Logging
 @inject HttpClient Http
 @inject Blazored.LocalStorage.ILocalStorageService LocalStorage
 @inject IJSRuntime JsRuntime
+@inject ILogger<Index> logger
 
 <div class="container-fluid">
     <div class="row">
@@ -215,9 +217,13 @@
         if (_manager != null || _engine == null || _canvas == null) return;
         
         _manager = new(_engine, _canvas);
+        
+        // This needs to happen here so we can initialize the entity from the _ideElement
+        // TODO: Make _ideElement inherit IEntityCreator and pass into PondManager
+        
         _canvas.OnClick += (sender, args) =>
         {
-            Console.WriteLine($"N: {args.X},{args.Y}");
+            logger.LogDebug("Click At ({XPosition},{YPosition})", args.X, args.Y);
             _manager.InitializeAndCreateEntity(_ideElement.CreateInstance<Entity>(_selectedType), args.X, args.Y);
         };
     }

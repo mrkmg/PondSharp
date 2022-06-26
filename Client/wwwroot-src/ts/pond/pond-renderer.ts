@@ -27,7 +27,7 @@ export class PondRenderer {
     
     private init() {
         if (this.application) {
-            console.debug("Removing PIXI instance");
+            console.debug("Removing PIXI instance"); 
             this.application.destroy(true, {children: true, texture: true, baseTexture: true});
             this.element.removeChild(this.element.children.item(0));
             this.application = null;
@@ -156,7 +156,8 @@ export class PondRenderer {
     
     processEntityChangeRequestsRaw(pointer: any) {        
         const length = win.Blazor.platform.getArrayLength(pointer);
-        for (let i = 0; i < length; i++) {
+        let i;
+        for (i = 0; i < length; i++) {
             const {entryPtr, id, type} = readEntityChangeHeader(pointer, i);
             if (!this.entities[id]) continue;
             switch (type) {
@@ -169,11 +170,13 @@ export class PondRenderer {
                     this.changeEntityColor(id, color);
                     break;
                 case EntityChangeType.None: // None, no more updates in this memory
+                    console.debug(`Entity Changes Last Tick: ${i}`);
                     return true;
                 default:
                     throw new Error("unknown type");
             }
         }
+        console.debug(`[FULL] Entity Changes Last Tick: ${i}`);
         return true;
     }
 }

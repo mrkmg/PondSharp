@@ -30,23 +30,11 @@
 
   <ItemGroup>
     <ExampleFiles Include="$(ProjectDir)..\Examples\*.cs" />
-    <TypeScriptFiles Include="$(ProjectDir)ts\**\*.*" />
+    <TypeScriptFiles Include="$(ProjectDir)wwwroot-src\**\*.*" />
     <CompiledJavascriptFiles Include="$(ProjectDir)wwwroot\js\main.*;$(ProjectDir)wwwroot\js\vendors.*;$(ProjectDir)wwwroot\js\ttf\codicon.ttf" />
-    <TypeScriptFiles Include="wwwroot-src\ts\code\code-editor.ts" />
-    <TypeScriptFiles Include="wwwroot-src\ts\main.ts" />
-    <TypeScriptFiles Include="wwwroot-src\ts\pond\pond-renderer.ts" />
   </ItemGroup>
   
   <ItemGroup>
-    <Content Include="wwwroot-src\css\vendor\bootstrap.min.css" />
-    <Content Include="wwwroot-src\css\vendor\FONT-LICENSE" />
-    <Content Include="wwwroot-src\css\vendor\ICON-LICENSE" />
-    <Content Include="wwwroot-src\css\vendor\open-iconic-bootstrap.min.css" />
-    <Content Include="wwwroot-src\fonts\open-iconic.eot" />
-    <Content Include="wwwroot-src\fonts\open-iconic.otf" />
-    <Content Include="wwwroot-src\fonts\open-iconic.svg" />
-    <Content Include="wwwroot-src\fonts\open-iconic.ttf" />
-    <Content Include="wwwroot-src\fonts\open-iconic.woff" />
     <None Include="wwwroot-src\css\app.scss" />
     <None Remove="wwwroot\user-scripts\**" />
     <None Remove="wwwroot\js\**" />
@@ -90,13 +78,13 @@
     <ZipDirectory DestinationFile="$(ProjectDir)wwwroot\sample-project.zip" SourceDirectory="SampleProject" Overwrite="true" />
   </Target>
   
-  <Target Name="InstallNPMDependencies" BeforeTargets="BeforeCompile;BuildWebAssets">
+  <Target Name="InstallNPMDependencies" BeforeTargets="BeforeBuild;BuildWebAssets">
     <Message Text="Installing NPM Dependencies" Importance="high" />
     <Exec Command="npm ci" Condition="$(Configuration) == 'Release'" />
     <Exec Command="npm install" Condition="$(Configuration) == 'Debug'" />
   </Target>
   
-  <Target Name="BuildWebAssets" BeforeTargets="BeforeCompile" Inputs="@(TypeScriptFiles)" Outputs="@(CompiledJavascriptFiles)">
+  <Target Name="BuildWebAssets" BeforeTargets="BeforeBuild" Inputs="@(TypeScriptFiles)" Outputs="@(CompiledJavascriptFiles)">
     <Message Text="Running NPM Build" Importance="high" />
     <Exec Command="npm run build:release" Condition="$(Configuration) == 'Release'" />
     <Exec Command="npm run build:debug" Condition="$(Configuration) == 'Debug'" />

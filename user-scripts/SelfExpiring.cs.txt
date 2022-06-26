@@ -1,0 +1,67 @@
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using PondSharp.UserScripts;
+
+namespace PondSharp.Examples
+{
+    /// <summary>
+    /// This entity moves randomly.
+    /// </summary>
+    [PondDefaults(Name = "Burn Effect")]
+    public class SelfExpiring : Simple
+    {
+        private int RemainingLife;
+        private int Age;
+        
+        protected override void OnCreated()
+        {
+            base.OnCreated();
+            Age = 0;
+            RemainingLife = 30;
+            // RemainingLife = Random.Next(10, 30);
+        }
+
+        protected override void Tick()
+        {
+            ChangeColor(Colors[Age]);
+            Age++;
+            if (--RemainingLife <= 0)
+            {
+                Destroy();
+                return;
+            }
+            base.Tick();
+
+        }
+
+        private static List<int> Colors = GenerateSequence(System.Drawing.Color.DarkRed, System.Drawing.Color.Firebrick, 15)
+            .Concat(GenerateSequence(System.Drawing.Color.Firebrick, System.Drawing.Color.Yellow, 11).Skip(1))
+            .Concat(GenerateSequence(System.Drawing.Color.Yellow, System.Drawing.Color.Black, 6).Skip(1))
+            .Select(x => x.ToArgb())
+            .ToList();
+        
+        private static List<Color> GenerateSequence(Color start, Color end, int colorCount)
+        {
+            var ret = new List<Color>();
+
+            // linear interpolation lerp (r,a,b) = (1-r)*a + r*b = (1-r)*(ax,ay,az) + r*(bx,by,bz)
+            for (var n = 0; n < colorCount; n++)
+            {
+                var r = (double)n / (double)(colorCount - 1);
+                var nr = 1.0 - r;
+                var A = (nr * start.A) + (r * end.A);
+                var R = (nr * start.R) + (r * end.R);
+                var G = (nr * start.G) + (r * end.G);
+                var B = (nr * start.B) + (r * end.B);
+
+                ret.Add(System.Drawing.Color.FromArgb((byte)A, (byte)R, (byte)G, (byte)B));
+            }
+
+            return ret;
+        }
+    }
+    
+    
+}

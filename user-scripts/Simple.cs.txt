@@ -1,3 +1,4 @@
+using System;
 using PondSharp.UserScripts;
 
 namespace PondSharp.Examples
@@ -8,21 +9,54 @@ namespace PondSharp.Examples
     [PondDefaults(InitialCount = 0, NewCount = 500)]
     public class Simple : BaseEntity
     {
+        private double PowerX;
+        private double PowerY;
+        private double CurrentX;
+        private double CurrentY;
+        
         protected override void OnCreated()
         {
-            if (Random.Next(2) == 0)
-                ForceX = Random.Next(2) == 0 ? 1 : -1;
-            else
-                ForceY = Random.Next(2) == 0 ? 1 : -1;
+            Reset();
         }
         
         protected override void Tick()
         {
+            CurrentX += PowerX;
+            CurrentY += PowerY;
+            if (Math.Abs(CurrentX) > 1)
+            {
+                ForceX = (int)CurrentX;
+                CurrentX -= ForceX;
+            }
+            else
+            {
+                ForceX = 0;
+            }
+            if (Math.Abs(CurrentY) > 1)
+            {
+                ForceY = (int)CurrentY;
+                CurrentY -= ForceY;
+            }
+            else
+            {
+                ForceY = 0;
+            }
+            
             if (!MoveTo(X + ForceX, Y + ForceY))
             {
-                ForceX = -ForceX;
-                ForceY = -ForceY;
+                Reset();
             }
+        }
+
+        private void Reset()
+        {
+            
+            PowerX = Random.NextDouble() * 2 - 1;
+            PowerY = Random.NextDouble() * 2 - 1;
+            ForceX = 0;
+            ForceY = 0;
+            CurrentX = 0;
+            CurrentY = 0;
         }
     }
 }

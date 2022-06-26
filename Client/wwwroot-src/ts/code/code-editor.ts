@@ -1,5 +1,24 @@
 import {editor} from "monaco-editor";
 
+// @ts-ignore
+self.MonacoEnvironment = {
+    getWorkerUrl: function (moduleId: any, label: any) {
+        if (label === 'json') {
+            return './js/json.worker.js';
+        }
+        if (label === 'css' || label === 'scss' || label === 'less') {
+            return './js/css.worker.js';
+        }
+        if (label === 'html' || label === 'handlebars' || label === 'razor') {
+            return './js/html.worker.js';
+        }
+        if (label === 'typescript' || label === 'javascript') {
+            return './js/ts.worker.js';
+        }
+        return './js/editor.worker.js';
+    }
+};
+
 export class CodeEditor {
     private editor: editor.IStandaloneCodeEditor;
     
@@ -8,7 +27,7 @@ export class CodeEditor {
             value: "",
             language: "csharp",
             theme: "vs-dark",
-            automaticLayout: true
+            automaticLayout: true,
         });
     }
     

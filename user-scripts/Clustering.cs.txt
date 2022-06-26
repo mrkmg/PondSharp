@@ -21,6 +21,12 @@ namespace PondSharp.Examples
         private const int SeparatingColor = 0xFFFF55; // Yellow
         private const int RestingColor = 0x55FF55;    // Green
 
+        [PondAdjustable(Min = 2, Max = 30, Name = "Group Radius")]
+        private static int GroupSize { get; set; } = 5;
+        
+        [PondAdjustable(Min = 2, Max = 50, Name = "Group Count")]
+        private static int GroupCount { get; set; } = 20;
+
         private int ThinkCooldown;
 
         private int RndThinkDelay(int max, int curve = 4, int divisors = 20) =>
@@ -77,13 +83,13 @@ namespace PondSharp.Examples
                 .Aggregate<IEntity, (int X, int Y)>((0, 0), (a, e) => (a.X + e.X/total, a.Y + e.Y/total));
             var distanceToCenter = Dist(X, Y, groupCenterX, groupCenterY);
             
-            if (entities.Count > 15)
+            if (entities.Count > GroupCount)
             {
                 ChangeColor(SeparatingColor);
                 // Move away from group center
                 (ForceX, ForceY) = GetForceDirection(X - groupCenterX, Y - groupCenterY);
                 ThinkCooldown = RndThinkDelay(100, 1);
-            } else if (distanceToCenter > 5)
+            } else if (distanceToCenter > GroupSize)
             {
                 ChangeColor(JoiningColor);
                 // Move toward group center

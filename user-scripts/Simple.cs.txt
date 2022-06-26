@@ -9,6 +9,9 @@ namespace PondSharp.Examples
     [PondDefaults(InitialCount = 0, NewCount = 500)]
     public class Simple : BaseEntity
     {
+        [PondAdjustable(Min = 1, Max = 100, Name = "Speed")]
+        private static int StartingSpeed { get; set; } = 20;
+        
         private double PowerX;
         private double PowerY;
         private double CurrentX;
@@ -16,7 +19,7 @@ namespace PondSharp.Examples
         
         protected override void OnCreated()
         {
-            Reset();
+            ResetPower();
         }
         
         protected override void Tick()
@@ -44,15 +47,15 @@ namespace PondSharp.Examples
             
             if (!MoveTo(X + ForceX, Y + ForceY))
             {
-                Reset();
+                ResetPower();
             }
         }
 
-        private void Reset()
+        protected void ResetPower()
         {
-            
-            PowerX = Random.NextDouble() * 2 - 1;
-            PowerY = Random.NextDouble() * 2 - 1;
+            var direction = Math.PI * 2 * Random.NextDouble();
+            PowerX = Math.Cos(direction) * (StartingSpeed/100.0);
+            PowerY = Math.Sin(direction) * (StartingSpeed/100.0);
             ForceX = 0;
             ForceY = 0;
             CurrentX = 0;

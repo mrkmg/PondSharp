@@ -18,7 +18,7 @@ namespace PondSharp.Examples
         
         protected override void OnCreated()
         {
-            ChangeViewDistance(5);
+            ChangeViewDistance(2);
             if (MasterEntityId != null) {
                 return;
             }

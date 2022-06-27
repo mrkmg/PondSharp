@@ -128,7 +128,7 @@ namespace PondSharp.Client.IDE
         {
             if (_assembly is null) 
                 throw new InvalidOperationException("No compiled assembly present");
-            if (!(_assembly.CreateInstance(instanceName, false, BindingFlags.Default, null, args, null, null) is T instance))
+            if (_assembly.CreateInstance(instanceName, false, BindingFlags.Default, null, args, null, null) is not T instance)
                 throw new ApplicationException($"{instanceName} failed to initialize");
             return instance;
         }
@@ -141,6 +141,7 @@ namespace PondSharp.Client.IDE
             };
 
             var downloads = await Task.WhenAll(
+                // ReSharper disable once AccessToDisposedClosure
                 Dlls.Select(dll => client.GetStreamAsync($"_framework/{dll}"))
             ).ConfigureAwait(false);
             _references = downloads.Select(dl => (MetadataReference) MetadataReference.CreateFromStream(dl)).ToList();

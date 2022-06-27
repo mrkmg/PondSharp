@@ -1,5 +1,5 @@
 using System;
-using System.Linq;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Reflection;
 using System.Text.Json;
@@ -27,7 +27,7 @@ namespace PondSharp.Client
         private static void ConfigureServices(WebAssemblyHostBuilder builder)
         {
             builder.Services.AddBlazoredLocalStorage();
-            builder.Services.AddScoped(sp => new HttpClient
+            builder.Services.AddScoped(_ => new HttpClient
             {
                 BaseAddress = new(builder.HostEnvironment.BaseAddress)
             });
@@ -39,7 +39,9 @@ namespace PondSharp.Client
             {
                 var jsRuntime = services.GetService<IJSRuntime>();
                 var prop = typeof(JSRuntime).GetProperty("JsonSerializerOptions", BindingFlags.NonPublic | BindingFlags.Instance);
+                Debug.Assert(prop != null, nameof(prop) + " != null");
                 var value = (JsonSerializerOptions)Convert.ChangeType(prop.GetValue(jsRuntime, null), typeof(JsonSerializerOptions));
+                Debug.Assert(value != null, nameof(value) + " != null");
                 value.DictionaryKeyPolicy = null;
                 value.PropertyNamingPolicy = null;
             }

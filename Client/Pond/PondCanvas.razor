@@ -39,11 +39,9 @@
         }
     }
 
-    private void EmitOnClick(int x, int y)
-    {
+    private void EmitOnClick(int x, int y) => 
         OnClick?.Invoke(this, new(x, y));
-    }
-    
+
     public void CreateEntity(int entityId, int x, int y, int color) => 
         Js.InvokeVoid(Method("createEntity"), entityId, x, y, color);
 

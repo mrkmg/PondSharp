@@ -16,6 +16,11 @@ namespace PondSharp.UserScripts
         /// <summary>
         /// Number of entities to create at simulation start.
         /// </summary>
-        public int InitialCount = 0; 
+        public int InitialCount = 0;
+
+        /// <summary>
+        /// Override the name displayed in the entity selection list.
+        /// </summary>
+        public string Name;
     }
 }

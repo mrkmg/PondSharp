@@ -14,6 +14,7 @@ namespace PondSharp.UserScripts
         public abstract IEnumerable<IEntity> Entities { get; }
         public abstract IEntity GetEntity(int entityId);
         public abstract IEntity GetEntityAt(int x, int y);
+        public abstract bool DestroyEntity(int entityId);
 
         public abstract IEnumerable<IEntity> GetVisibleEntities(IEntity entity);
 
@@ -92,12 +93,18 @@ namespace PondSharp.UserScripts
 
         public event EventHandler<(int, int)> EntityMoved;
         public event EventHandler<IEntity> EntityAdded;
+        public event EventHandler<IEntity> EntityRemoved;
         public event EventHandler<int> EntityColorChanged;
         public event EventHandler<int> EntityViewDistanceChanged;
 
         protected void OnEntityAdded(IEntity entity)
         {
             EntityAdded?.Invoke(this, entity);
+        }
+
+        protected void OnEntityRemoved(IEntity entity)
+        {
+            EntityRemoved?.Invoke(this, entity);
         }
 
         protected void OnEntityMoved(IEntity entity)

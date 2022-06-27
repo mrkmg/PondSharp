@@ -10,6 +10,7 @@ namespace PondSharp.Client.Pond
     public sealed class PondManager
     {
         private readonly PondCanvas _pondCanvas;
+        private readonly IEntityCreator _entityCreator;
         private readonly PondEngine _pondEngine;
         
         private readonly Timer _tickTimer;
@@ -26,19 +27,28 @@ namespace PondSharp.Client.Pond
             set => _tickTimer.Interval = value;
         }
 
-        public PondManager([NotNull] PondEngine engine, [NotNull] PondCanvas canvas)
+        public PondManager([NotNull] PondEngine engine, [NotNull] PondCanvas canvas, [NotNull] IEntityCreator entityCreator)
         {
             _tickTimer = new(16); //60tps 
             _tickTimer.Elapsed += (_, _) => Tick();
             
             _pondCanvas = canvas;
+            _entityCreator = entityCreator;
             _pondEngine = engine;
 
             _pondEngine.EntityAdded += EngineOnEntityAdded;
             _pondEngine.EntityMoved += EngineOnEntityMoved;
             _pondEngine.EntityColorChanged += EngineOnEntityColorChanged;
+            _pondEngine.EntityRemoved += EngineOnEntityRemoved;
+
+            _pondCanvas.OnClick += PondCanvasClicked;
         }
-        
+
+        private void PondCanvasClicked(object _, PondCanvas.ClickArgs args)
+        {
+            if (args.X >= _pondEngine.MinX && args.X <= _pondEngine.MaxX && args.Y >= _pondEngine.MinY && args.Y <= _pondEngine.MaxY) InitializeAndCreateEntity(_entityCreator.CreateSelectedEntity(), args.X, args.Y);
+        }
+
         private void Tick()
         {
             var diff = DateTime.Now.Subtract(_lastTime).TotalMilliseconds;
@@ -63,16 +73,21 @@ namespace PondSharp.Client.Pond
             _pondCanvas.CreateEntity(e.Id, e.X, e.Y, e.Color);
         }
 
+        private void EngineOnEntityRemoved(object sender, IEntity e)
+        {
+            _pondCanvas.DestroyEntity(e.Id);
+        }
+
         private void EngineOnEntityMoved(object sender, (int, int) position)
         {
-            if (!(sender is IEntity entity)) return;
+            if (sender is not IEntity entity) return;
             var (x, y) = position;
             _pondCanvas.MoveEntity(entity.Id, x, y);
         }
 
         private void EngineOnEntityColorChanged(object sender, int color)
         {
-            if (!(sender is IEntity entity)) return;
+            if (sender is not IEntity entity) return;
             _pondCanvas.ChangeEntityColor(entity.Id, color);
         }
 

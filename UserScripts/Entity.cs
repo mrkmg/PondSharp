@@ -164,6 +164,12 @@ namespace PondSharp.UserScripts
         protected bool ChangeViewDistance(int distance) => Engine.ChangeViewDistance(this, distance);
 
         /// <summary>
+        /// Destroys the entity, completely removing them from the world.
+        /// </summary>
+        /// <returns>If the entity was destroyed.</returns>
+        protected bool Destroy() => Engine.DestroyEntity(_id);
+
+        /// <summary>
         /// Entities which are within the ViewDistance
         /// </summary>
         /// <see cref="ViewDistance"/>

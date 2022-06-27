@@ -4,24 +4,26 @@
 @using System.Net.Http.Headers
 @using System.IO
 @using Blazored.LocalStorage
+@using System.Diagnostics
 <!-- ReSharper disable once InconsistentNaming -->
 @inject IJSRuntime JSRuntime
-@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+@inject ILocalStorageService LocalStorage
 @inject HttpClient Http
+@implements IEntityCreator
 
 <div class="editor-files">
     <div class="btn-group btn-group-sm top-tabs">
         @foreach (var name in SourceNames)
         {
-            <button class="btn @(_selectedSource == name ? "btn-primary" : "btn-secondary")" @onclick="e => SelectSource(name)">
+            <button class="btn @(_selectedSource == name ? "btn-primary" : "btn-secondary")" @onclick="_ => SelectSource(name)">
                 @name
             </button>
             
             <div class="btn-group-vertical @(_selectedSource == name ? "bg-primary" : "bg-secondary")">
-                <button class="btn btn-icon @(_selectedSource == name ? "btn-primary" : "btn-secondary")" @onclick="e => RenameScript(name)">
+                <button class="btn btn-icon @(_selectedSource == name ? "btn-primary" : "btn-secondary")" @onclick="_ => RenameScript(name)">
                     <span class="oi oi-wrench" title="Rename" aria-hidden="true"></span>
                 </button>
-                <button class="btn btn-icon @(_selectedSource == name ? "btn-primary" : "btn-secondary")" @onclick="e => DeleteScript(name)">
+                <button class="btn btn-icon @(_selectedSource == name ? "btn-primary" : "btn-secondary")" @onclick="_ => DeleteScript(name)">
                     <span class="oi oi-circle-x" title="Delete" aria-hidden="true"></span>
                 </button>
             </div>
@@ -78,8 +80,8 @@
     public bool IsCompiled => _compiler?.HasAssembly ?? false;
     private IEnumerable<string> SourceNames => _sources.Keys.OrderBy(s => s);
     private string UserScriptsVersion => Assembly
-        .GetAssembly(typeof(IEntity))
-        .GetName().Version.ToString();
+        .GetAssembly(typeof(IEntity))!
+        .GetName().Version!.ToString();
     
     private string FullEditorPromptName
     {
@@ -231,13 +233,14 @@
             "Stated.cs",
             "Clustering.cs",
             "Chase.cs",
-            "Rand.cs",
+            "SelfExpiring.cs",
             "Simple.cs",
             "BaseEntity.cs",
         };
         _sources.Clear();
         foreach (var sourceFile in sourceFiles)
         {
+            Debug.Assert(Http.BaseAddress != null, "Http.BaseAddress != null");
             var request = new HttpRequestMessage(HttpMethod.Get, Http.BaseAddress.AbsoluteUri + $"/user-scripts/{sourceFile}.txt")
             {
                 Headers = { CacheControl = CacheControlHeaderValue.Parse("no-cache,max-age=0") },
@@ -277,4 +280,13 @@
         public string Name { get; set; }
         public string Source { get; set; }
     }
+    
+    public string SelectedEntity { get; set; }
+
+    public T CreateEntity<T>() where T : Entity => (T)CreateEntity(typeof(T).FullName);
+
+    public Entity CreateEntity(string fullyQualifiedName) => CreateInstance<Entity>(fullyQualifiedName);
+
+    public Entity CreateSelectedEntity() => CreateInstance<Entity>(SelectedEntity);
+
 }

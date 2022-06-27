@@ -3,11 +3,8 @@
 @using PondSharp.Client.Pond
 @using PondSharp.Client.IDE
 @using System.Timers
-@using Microsoft.Extensions.Logging
-@inject HttpClient Http
-@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+@using System.Reflection
 @inject IJSRuntime JsRuntime
-@inject ILogger<Index> logger
 
 <div class="container-fluid">
     <div class="row">
@@ -33,10 +30,23 @@
                 <div class="col">
                     @if (_availableEntityTypes.Any())
                     {
-                        <div class="btn-group btn-group-vertical">
+                        <div class="btn-group btn-group-vertical" style="width: 100%">
                             @foreach (var type in _availableEntityTypes)
                             {
-                                <button class="btn btn-outline-primary @(type.FullName == _selectedType ? "active" : "")" @onclick="@(() => _selectedType = type.FullName)">@type.ShortName</button>
+                                <button class="btn btn-outline-primary @(type == SelectedType ? "active" : "")" @onclick="@(() => SelectedType = type)">@type.ShortName</button>
+                            }
+                        </div>
+                    }
+                    @if (SelectedType != null && SelectedType.Adjustables.Count > 0)
+                    {
+                        <div class="adjustables">
+                            @foreach (var adjustable in SelectedType.Adjustables)
+                            {
+                                <div class="form-group">
+                                    <label class="form-label">@(adjustable.Name)</label><br />
+                                    <small>@(adjustable.Value)</small>
+                                    <input class="form-control" type="range" @bind="adjustable.Value" min="@adjustable.Attribute.Min" max="@adjustable.Attribute.Max" /> 
+                                </div>
                             }
                         </div>
                     }
@@ -44,33 +54,34 @@
             </div>
             <div class="row">
                 <div class="col-auto bottom-tabs">
-                    <div class="btn-toolbar">
-                        <div class="btn-group">
-                            <button class="btn btn-success" @onclick="StartPond" disabled="@(!_ideElement?.IsCompiled ?? IsRunning)">Start</button>
-                            <button class="btn btn-warning" @onclick="StopPond" disabled="@(!IsRunning)">Stop</button>
-                            <button class="btn btn-danger" @onclick="Reset" disabled="@(!_ideElement?.IsCompiled)">Reset</button>
+                    <div class="btn-group">
+                        <button class="btn btn-success" @onclick="StartPond" disabled="@(!_ideElement?.IsCompiled ?? IsRunning)">Start</button>
+                        <button class="btn btn-warning" @onclick="StopPond" disabled="@(!IsRunning)">Stop</button>
+                        <button class="btn btn-danger" @onclick="Reset" disabled="@(!_ideElement?.IsCompiled)">Reset</button>
+                    </div>
+                </div>
+                <div class="col-auto bottom-tabs">
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text" id="btnGroupAddon">TPS</div>
                         </div>
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                              <div class="input-group-text" id="btnGroupAddon">TPS</div>
-                            </div>
-                            <input type="number" @bind-value="TickSpeed"/>
-                        </div>
+                        <input class="form-control" min="1" max="1000" type="number" @bind-value="TickSpeed" style="width: 80px" />
                     </div>
                 </div>
                 <div class="col text-monospace text-center">
                     <span>@_output</span> |
-                    <span>TPS: <span>@(Math.Ceiling(1000 / (_manager?.CurrentTickTime ?? 1)))</span></span>
+                    <span>TPS: <span>@(Math.Ceiling(1000 / (_manager?.CurrentTickTime ?? 1)))</span></span> |
+                    <span>Count: @(TotalEntities)</span>
                 </div>
-                <div class="col-auto">
-                    <div class="btn-group bottom-tabs">
+                <div class="col-auto bottom-tabs">
+                    <div class="btn-group">
                         <button class="btn btn-primary" @onclick="() => _display = DisplayType.Ide">Edit Code</button>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col @(_display != DisplayType.Ide ? "d-none" : "")">
-            <IdeElement @ref="_ideElement" IsInitialized="@(() => IdeElementInitialized())"></IdeElement>
+            <IdeElement @ref="_ideElement" IsInitialized="@(IdeElementInitialized)"></IdeElement>
             <div class="row">
                 <div class="col">
                     <button class="btn btn-primary" @onclick="@CompileSource">Compile</button>
@@ -103,7 +114,12 @@
     private DisplayType _display = DisplayType.Initializing;
     private string _output = "No Instance Loaded";
     private IList<string> _errors = new List<string>();
-    private string _selectedType = string.Empty;
+    private AvailableEntityEntry _selectedEntity;
+    private AvailableEntityEntry SelectedType
+    {
+        get => _selectedEntity;
+        set { _selectedEntity = value; _ideElement.SelectedEntity = _selectedEntity.FullName; }
+    }
 
     private AvailableEntityEntry[] _availableEntityTypes = Array.Empty<AvailableEntityEntry>();
     private readonly Dictionary<string, int> _countToCreate = new();
@@ -122,6 +138,7 @@
     private int _pondHeight = 300;
 
     private bool IsRunning => _manager?.IsRunning ?? false;
+    private int TotalEntities => _engine?.TotalEntities ?? 0;
     
     private readonly Timer _debugUpdateTimer = new(1000);
 
@@ -136,7 +153,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _debugUpdateTimer.Elapsed += (_,__) => StateHasChanged();
+        _debugUpdateTimer.Elapsed += (_,_) => StateHasChanged();
 
         var size = await JsRuntime.InvokeAsync<int[]>("getSize");
         if (size.Length == 2)
@@ -174,27 +191,44 @@
 
         _availableEntityTypes = types.Select(type =>
         {
-            PondDefaultsAttribute defaults = null;
-            foreach (var attribute in Attribute.GetCustomAttributes(type)) 
-                if (attribute is PondDefaultsAttribute d) defaults = d;
-            defaults ??= new();
+            var defaults = type.GetCustomAttribute<PondDefaultsAttribute>() ?? new();
+            var adjustables = new List<AdjustableEntry>();
+            var cType = type;
+            while (true)
+            {
+                adjustables.AddRange(cType.GetProperties(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
+                    .SelectMany(property => property
+                        .GetCustomAttributes<PondAdjustableAttribute>()
+                        .Select(attribute => new AdjustableEntry()
+                        {
+                            PropertyInfo = property,
+                            Attribute = attribute
+                        })
+                    ));
+
+                if (cType.BaseType is null)
+                    break;
+                cType = cType.BaseType;
+            }
+
             return new AvailableEntityEntry
             {
                 Type = type,
                 Defaults = defaults,
                 FullName = type.FullName,
-                ShortName = type.FullName?.Split('.').Last(),
+                ShortName = defaults.Name ?? type.FullName?.Split('.').Last(),
+                Adjustables = adjustables,
             };
         }).ToArray();
 
         if (_availableEntityTypes.Length == 0)
         {
-            _selectedType = null;
+            SelectedType = null;
             return;
         }
         
-        if (!_availableEntityTypes.Select(a => a.FullName).Contains(_selectedType))
-            _selectedType = _availableEntityTypes.First().FullName;
+        if (!_availableEntityTypes.Contains(SelectedType))
+            SelectedType = _availableEntityTypes.First();
         
         _countToCreate.Clear();
         foreach (var availableEntity in _availableEntityTypes)
@@ -214,17 +248,17 @@
 
     private void TryCreatePondManager()
     {
-        if (_manager != null || _engine == null || _canvas == null) return;
+        if (_manager != null || _engine == null || _canvas == null || _ideElement == null) return;
         
-        _manager = new(_engine, _canvas);
+        _manager = new(_engine, _canvas, _ideElement);
         
         // This needs to happen here so we can initialize the entity from the _ideElement
         // TODO: Make _ideElement inherit IEntityCreator and pass into PondManager
         
-        _canvas.OnClick += (sender, args) =>
+        _canvas.OnClick += (_, args) =>
         {
-            logger.LogDebug("Click At ({XPosition},{YPosition})", args.X, args.Y);
-            _manager.InitializeAndCreateEntity(_ideElement.CreateInstance<Entity>(_selectedType), args.X, args.Y);
+            if (args.X >= _engine.MinX && args.X <= _engine.MaxX && args.Y >= _engine.MinY && args.Y <= _engine.MaxY)
+                _manager.InitializeAndCreateEntity(_ideElement.CreateInstance<Entity>(SelectedType.FullName), args.X, args.Y);
         };
     }
 
@@ -301,12 +335,31 @@
         _engine.ClearAllEntities();
     }
 
-    private class AvailableEntityEntry
+    public class AvailableEntityEntry
     {
         public string FullName;
         public string ShortName;
         public Type Type;
         public PondDefaultsAttribute Defaults;
+        public List<AdjustableEntry> Adjustables;
+    }
+
+    public class AdjustableEntry
+    {
+        public PropertyInfo PropertyInfo;
+        public PondAdjustableAttribute Attribute;
+
+        public string Name => Attribute.Name ?? PropertyInfo.Name;
+        
+        public int Value
+        {
+            get => GetValue();
+            set => SetValue(value);
+        }
+
+        private int GetValue() => (int)PropertyInfo.GetValue(null)!;
+        // TODO: Add in validation based on attribute
+        private void SetValue(int value) => PropertyInfo.SetValue(null, value);
     }
 
 }

@@ -7,8 +7,6 @@ namespace PondSharp.Client.Pond
 {
     public sealed class PondEngine : Engine
     {
-        private const int BlockSize = 15;
-
         public PondEngine(int width, int height)
         {
             MinX = -width / 2;
@@ -21,10 +19,12 @@ namespace PondSharp.Client.Pond
         private Layer<Entity> _entityLayer;
         private List<Entity> _entities = new();
         private readonly Dictionary<int, Entity> _entitiesById = new();
+        private readonly List<int> _entitiesToRemoveById = new();
         
         public override IEnumerable<IEntity> Entities => _entities;
         public override IEntity GetEntity(int entityId) => _entitiesById[entityId];
         public override IEntity GetEntityAt(int x, int y) => _entityLayer.GetAt(x, y);
+        public int TotalEntities => _entities.Count;
         
         private static int Dist(int x1, int y1, int x2, int y2) =>
             (int) Math.Sqrt(Math.Pow(x1 - x2, 2) + Math.Pow(y1 - y2, 2));
@@ -42,7 +42,8 @@ namespace PondSharp.Client.Pond
         public void Tick()
         {
             foreach (var entity in _entities) DoTick(entity);
-            // _entityTree.Balance();
+            foreach (var entityId in _entitiesToRemoveById) DestroyEntityActual(entityId);
+            _entitiesToRemoveById.Clear();
         }
         
         public override bool CanMoveTo(IEntity entity, int x, int y)
@@ -83,13 +84,23 @@ namespace PondSharp.Client.Pond
         public override IEnumerable<IEntity> GetVisibleEntities(IEntity entity) =>
             GetEntitiesAround(entity.X, entity.Y, entity.ViewDistance).Where(e => e.Id != entity.Id);
 
-        public bool RemoveEntity(int entityId)
+        public override bool DestroyEntity(int entityId)
+        {
+            if (!_entitiesById.ContainsKey(entityId)) return false;
+            // This is inefficient if many entities are removed every tick.
+            if (_entitiesToRemoveById.Contains(entityId)) return false; 
+            _entitiesToRemoveById.Add(entityId);
+            return true;
+        }
+
+        private void DestroyEntityActual(int entityId)
         {
             var entity = _entitiesById[entityId];
             WasDestroyed(entity);
+            OnEntityRemoved(entity);
             _entityLayer.Remove(entity, entity.X, entity.Y);
             _entities.Remove(entity);
-            return _entitiesById.Remove(entityId);
+            _entitiesById.Remove(entityId);
         }
 
         public void ClearAllEntities()

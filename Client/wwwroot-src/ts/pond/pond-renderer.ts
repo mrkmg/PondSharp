@@ -14,7 +14,7 @@ export class PondRenderer {
     private width: number;
     private height: number;
     private isMouseDown = false;
-    private lastMouseLocation: {x: number, y: number};
+    private lastGridLocation: {x: number, y: number};
     
     public constructor(pondRef: any, element: HTMLElement, width: number, height: number, gridSize: number) {
         this.pondRef = pondRef;
@@ -72,18 +72,13 @@ export class PondRenderer {
         const gridLocation = this.getGridPosition(e);
         this.cursor.position.x = gridLocation.x * this.gridSize;
         this.cursor.position.y = gridLocation.y * this.gridSize;
-        if (this.isMouseDown && (this.lastMouseLocation.x !== gridLocation.x || this.lastMouseLocation.y !== gridLocation.y)) {
-            this.onClick(gridLocation.x, gridLocation.y);
-        }
-        this.lastMouseLocation = gridLocation;
+        this.lastGridLocation = gridLocation;
     }
     
     private onMouseDown(e:  MouseEvent) {
         e.stopPropagation();
         this.isMouseDown = true;
-        const gridLocation = this.getGridPosition(e);
-        this.lastMouseLocation = gridLocation;
-        this.onClick(gridLocation.x, gridLocation.y);
+        this.lastGridLocation = this.getGridPosition(e);
     }
     
     private onMouseUp(e:  MouseEvent) {
@@ -107,6 +102,9 @@ export class PondRenderer {
 
     private onTick() {
         this.fps.text = `${Math.round(PIXI.Ticker.shared.FPS)} fps`;
+        if (this.isMouseDown) {
+            this.onClick(this.lastGridLocation.x, this.lastGridLocation.y);
+        }
     }
 
     start = () => this.application.start();

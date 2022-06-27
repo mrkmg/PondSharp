@@ -251,15 +251,6 @@
         if (_manager != null || _engine == null || _canvas == null || _ideElement == null) return;
         
         _manager = new(_engine, _canvas, _ideElement);
-        
-        // This needs to happen here so we can initialize the entity from the _ideElement
-        // TODO: Make _ideElement inherit IEntityCreator and pass into PondManager
-        
-        _canvas.OnClick += (_, args) =>
-        {
-            if (args.X >= _engine.MinX && args.X <= _engine.MaxX && args.Y >= _engine.MinY && args.Y <= _engine.MaxY)
-                _manager.InitializeAndCreateEntity(_ideElement.CreateInstance<Entity>(SelectedType.FullName), args.X, args.Y);
-        };
     }
 
     private void CreateEntity(string fullName, int? count = null)

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using PondSharp.UserScripts;
 
@@ -26,13 +25,13 @@ namespace PondSharp.Examples
     public class Stated : Entity
     {
         private static readonly Random Random = new Random();
-        private int DestinationX;
-        private int DestinationY;
-        private int StuckCounter;
-        private State MyState;
-        private int FleeX;
-        private int FleeY;
-        private int FleeCooldown;
+        private int _destinationX;
+        private int _destinationY;
+        private int _stuckCounter;
+        private State _myState;
+        private int _fleeX;
+        private int _fleeY;
+        private int _fleeCooldown;
 
         private static List<State> States = new List<State>();
         private static int TotalEntities => States.Sum(s => s.Followers.Count + 1);
@@ -40,81 +39,81 @@ namespace PondSharp.Examples
 
         protected override void OnCreated()
         {
-            StuckCounter = 10;
-            DestinationX = X;
-            DestinationY = Y;
+            _stuckCounter = 10;
+            _destinationX = X;
+            _destinationY = Y;
 
-            MyState = States.FirstOrDefault(s => !s.IsFull);
-            if (MyState == null)
+            _myState = States.FirstOrDefault(s => !s.IsFull);
+            if (_myState == null)
             {
-                MyState = new State {Leader = this};
-                States.Add(MyState);
+                _myState = new State {Leader = this};
+                States.Add(_myState);
             }
             
-            MyState.Followers.Add(this);
+            _myState.Followers.Add(this);
 
             foreach (var state in States)
             {
                 state.CurrentState = CurrentStateType.Exploding;
             }
-            ChangeColor(MyState.StateColor);
+            ChangeColor(_myState.StateColor);
         }
 
         protected override void OnDestroy()
         {
-            if (MyState == null) return;
-            if (MyState.Leader?.Id == Id) MyState.Leader = null;
-            MyState.Followers.Remove(this);
-            if (MyState.Followers.Count == 0) States.Remove(MyState);
-            MyState = null;
+            if (_myState == null) return;
+            if (_myState.Leader?.Id == Id) _myState.Leader = null;
+            _myState.Followers.Remove(this);
+            if (_myState.Followers.Count == 0) States.Remove(_myState);
+            _myState = null;
         }
 
         protected override void Tick()
         {
-            if (MyState == null)
+            if (_myState == null)
             {
                 if (Color != 0xFF0000) 
                     ChangeColor(0xFF0000);
                 return;
             }
             
-            if (MyState.Leader.Id == Id) MyState.Tick();
+            if (_myState.Leader.Id == Id) _myState.Tick();
 
-            if (X == DestinationX && Y == DestinationY) return;
+            if (X == _destinationX && Y == _destinationY) return;
 
-            if (FleeCooldown > 0)
+            if (_fleeCooldown > 0)
             {
-                FleeCooldown--;
+                _fleeCooldown--;
                 var t = Random.Next(9);
-                if (t == 0) MoveTo(X - FleeX, Y - FleeY);
-                else if (t < 5)  MoveTo(X + FleeY, Y - FleeX);
-                else MoveTo(X - FleeY, Y + FleeX);
+                if (t == 0) MoveTo(X - _fleeX, Y - _fleeY);
+                else if (t < 5)  MoveTo(X + _fleeY, Y - _fleeX);
+                else MoveTo(X - _fleeY, Y + _fleeX);
                 return;
             }
 
             if (MoveTowardsTarget()) return;
             
-            var (x, y) = ((double)DestinationX - X, (double)DestinationY - Y);
+            var (x, y) = ((double)_destinationX - X, (double)_destinationY - Y);
             var dM = Math.Sqrt(Math.Pow(x, 2) + Math.Pow(y, 2));
             var (fx, fy) = dM == 0 ? (0, 0) : ((int)Math.Round(x / dM), (int)Math.Round(y / dM));
             
-            if (dM <= MyState.CurrentMaxStuckDistance && --StuckCounter <= 0)
+            if (dM <= _myState.CurrentMaxStuckDistance && --_stuckCounter <= 0)
             {
-                DestinationX = X;
-                DestinationY = Y;
+                _destinationX = X;
+                _destinationY = Y;
                 return;
             }
 
-            FleeCooldown = 3;
-            FleeX = fx;
-            FleeY = fy;
+            _fleeCooldown = 3;
+            _fleeX = fx;
+            _fleeY = fy;
         }
 
         private void SetMovePoint(int x, int y, int maxStuckCount)
         {
-            DestinationX = x;
-            DestinationY = y;
-            StuckCounter = maxStuckCount;
+            _destinationX = x;
+            _destinationY = y;
+            _stuckCounter = maxStuckCount;
             SetMoveTowards(x, y);
         }
 
@@ -146,8 +145,8 @@ namespace PondSharp.Examples
             public int CurrentTaskTimeout = 100;
 
             private bool DestinationsFulfilled =>
-                !(Leader?.DestinationX != Leader?.X || Leader?.DestinationY != Leader?.Y ||
-                  Followers.Any(f => f.X != f.DestinationX || f.Y != f.DestinationY));
+                !(Leader?._destinationX != Leader?.X || Leader?._destinationY != Leader?.Y ||
+                  Followers.Any(f => f.X != f._destinationX || f.Y != f._destinationY));
 
             public void Tick()
             {

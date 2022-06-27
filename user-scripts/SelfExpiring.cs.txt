@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using PondSharp.UserScripts;
@@ -13,27 +11,28 @@ namespace PondSharp.Examples
     [PondDefaults(Name = "Burn Effect")]
     public class SelfExpiring : Simple
     {
-        private static int _startAge = 80;
+        private static int StartAgeReal = 80;
         
         [PondAdjustable(Min = 5, Max=240, Name = "Age")]
         private static int StartAge
         {
-            get => _startAge;
+            get => StartAgeReal;
+            // ReSharper disable once UnusedMember.Local
             set
             {
-                _startAge = value;
+                StartAgeReal = value;
                 Colors = CreateAgeColor();
             }
         }
         
-        private int RemainingLife;
-        private int Age;
+        private int _remainingLife;
+        private int _age;
         
         protected override void OnCreated()
         {
             base.OnCreated();
-            Age = 0;
-            RemainingLife = StartAge;
+            _age = 0;
+            _remainingLife = StartAge;
         }
 
         protected override void Tick()
@@ -43,15 +42,15 @@ namespace PondSharp.Examples
             // array, we need to ensure we do not
             // try to change the color past colors
             // that are available.
-            if (Colors.Count <= Age)
+            if (Colors.Count <= _age)
             {
                 Destroy();
                 return;
             }
             
-            ChangeColor(Colors[Age]);
-            Age++;
-            if (--RemainingLife <= 0)
+            ChangeColor(Colors[_age]);
+            _age++;
+            if (--_remainingLife <= 0)
             {
                 Destroy();
                 return;
@@ -88,18 +87,16 @@ namespace PondSharp.Examples
         private static List<Color> GenerateSequence(Color start, Color end, int colorCount)
         {
             var ret = new List<Color>();
-
-            // linear interpolation lerp (r,a,b) = (1-r)*a + r*b = (1-r)*(ax,ay,az) + r*(bx,by,bz)
             for (var n = 0; n < colorCount; n++)
             {
-                var r = (double)n / (double)(colorCount - 1);
-                var nr = 1.0 - r;
-                var A = (nr * start.A) + (r * end.A);
-                var R = (nr * start.R) + (r * end.R);
-                var G = (nr * start.G) + (r * end.G);
-                var B = (nr * start.B) + (r * end.B);
+                var ratio = n / (double)(colorCount - 1);
+                var negativeRatio = 1.0 - ratio;
+                var aComponent = negativeRatio * start.A + ratio * end.A;
+                var rComponent = negativeRatio * start.R + ratio * end.R;
+                var gComponent = negativeRatio * start.G + ratio * end.G;
+                var bComponent = negativeRatio * start.B + ratio * end.B;
 
-                ret.Add(System.Drawing.Color.FromArgb((byte)A, (byte)R, (byte)G, (byte)B));
+                ret.Add(System.Drawing.Color.FromArgb((byte)aComponent, (byte)rComponent, (byte)gComponent, (byte)bComponent));
             }
 
             return ret;

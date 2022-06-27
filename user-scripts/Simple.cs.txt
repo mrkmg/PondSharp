@@ -12,10 +12,10 @@ namespace PondSharp.Examples
         [PondAdjustable(Min = 1, Max = 100, Name = "Speed")]
         private static int StartingSpeed { get; set; } = 20;
         
-        private double PowerX;
-        private double PowerY;
-        private double CurrentX;
-        private double CurrentY;
+        private double _powerX;
+        private double _powerY;
+        private double _currentX;
+        private double _currentY;
         
         protected override void OnCreated()
         {
@@ -24,21 +24,21 @@ namespace PondSharp.Examples
         
         protected override void Tick()
         {
-            CurrentX += PowerX;
-            CurrentY += PowerY;
-            if (Math.Abs(CurrentX) > 1)
+            _currentX += _powerX;
+            _currentY += _powerY;
+            if (Math.Abs(_currentX) > 1)
             {
-                ForceX = (int)CurrentX;
-                CurrentX -= ForceX;
+                ForceX = (int)_currentX;
+                _currentX -= ForceX;
             }
             else
             {
                 ForceX = 0;
             }
-            if (Math.Abs(CurrentY) > 1)
+            if (Math.Abs(_currentY) > 1)
             {
-                ForceY = (int)CurrentY;
-                CurrentY -= ForceY;
+                ForceY = (int)_currentY;
+                _currentY -= ForceY;
             }
             else
             {
@@ -54,12 +54,12 @@ namespace PondSharp.Examples
         protected void ResetPower()
         {
             var direction = Math.PI * 2 * Random.NextDouble();
-            PowerX = Math.Cos(direction) * (StartingSpeed/100.0);
-            PowerY = Math.Sin(direction) * (StartingSpeed/100.0);
+            _powerX = Math.Cos(direction) * (StartingSpeed/100.0);
+            _powerY = Math.Sin(direction) * (StartingSpeed/100.0);
             ForceX = 0;
             ForceY = 0;
-            CurrentX = 0;
-            CurrentY = 0;
+            _currentX = 0;
+            _currentY = 0;
         }
     }
 }

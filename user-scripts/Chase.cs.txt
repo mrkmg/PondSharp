@@ -12,8 +12,8 @@ namespace PondSharp.Examples
         private static int? MasterEntityId;
         private static (int x, int y) MasterXy = (0, 0);
 
-        private (int x, int y) Target = (0, 0);
-        private int FleeCooldown;
+        private (int x, int y) _target = (0, 0);
+        private int _fleeCooldown;
         private bool IsMaster => MasterEntityId == Id;
         
         protected override void OnCreated()
@@ -24,7 +24,7 @@ namespace PondSharp.Examples
             }
             ChangeColor(0xFF0000);
             MasterEntityId = Id;
-            Target = (X, Y);
+            _target = (X, Y);
         }
 
         protected override void OnDestroy()
@@ -36,14 +36,14 @@ namespace PondSharp.Examples
         {
             if (IsMaster)
             {
-                (ForceX, ForceY) = GetForceDirection(Target.x - X, Target.y - Y);
-                if (X == Target.x && Y == Target.y || !MoveTo(X + ForceX, Y + ForceY))
+                (ForceX, ForceY) = GetForceDirection(_target.x - X, _target.y - Y);
+                if (X == _target.x && Y == _target.y || !MoveTo(X + ForceX, Y + ForceY))
                     ChooseRandomTarget();
                 MasterXy = (X, Y);
             }
             else
             {
-                if (FleeCooldown == 0)
+                if (_fleeCooldown == 0)
                     (ForceX, ForceY) = GetForceDirection(MasterXy.x - X, MasterXy.y - Y);
                 
                 CheckFlee();
@@ -56,14 +56,14 @@ namespace PondSharp.Examples
 
         private void ChooseRandomTarget()
         {
-            Target = (X + Random.Next(WorldMinX, WorldMaxX), Y + Random.Next(WorldMinY, WorldMaxY));
+            _target = (X + Random.Next(WorldMinX, WorldMaxX), Y + Random.Next(WorldMinY, WorldMaxY));
         }
 
         private void CheckFlee()
         {
-            if (FleeCooldown >= 1)
+            if (_fleeCooldown >= 1)
             {
-                FleeCooldown--;
+                _fleeCooldown--;
                 return;
             }
             
@@ -75,7 +75,7 @@ namespace PondSharp.Examples
 
             (ForceX, ForceY) = GetForceDirection(X - closestEntity.X, Y - closestEntity.Y);
             if (ForceX == 0 && ForceY == 0) ChooseRandomDirection();
-            FleeCooldown = 10;
+            _fleeCooldown = 10;
         }
     }
 }

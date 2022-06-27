@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using PondSharp.UserScripts;
@@ -24,6 +26,9 @@ namespace PondSharp.Examples
                 Colors = CreateAgeColor();
             }
         }
+
+        [PondAdjustable(Min = 0, Max = 1, Step = 0.05)]
+        private static double Ratio { get; set; } = 0.8;
         
         private int _remainingLife;
         private int _age;
@@ -31,8 +36,10 @@ namespace PondSharp.Examples
         protected override void OnCreated()
         {
             base.OnCreated();
-            _age = 0;
-            _remainingLife = StartAge;
+            SetIsBlocking(false);
+            var mid = (1 - Ratio) * StartAge;
+            _age = (int)(Random.NextDouble() <= Ratio ? mid - Math.Pow(mid, Random.NextDouble()) : Math.Pow(StartAge - mid, Random.NextDouble()) + mid);
+            _remainingLife = StartAge - _age;
         }
 
         protected override void Tick()
@@ -56,37 +63,42 @@ namespace PondSharp.Examples
                 return;
             }
 
-            if (Random.Next(10) == 0)
-                ResetPower();
+            // if (Random.Next(10) == 0)
+                // ResetPower();
             
             base.Tick();
 
         }
         
-        private const double Break1 = 0.4;
-        private const double Break2 = 0.4;
-        private static readonly Color Color1 = System.Drawing.Color.FromArgb(unchecked((int)0xff4f0711));
-        private static readonly Color Color2= System.Drawing.Color.Firebrick;
-        private static readonly Color Color3 = System.Drawing.Color.Yellow;
-        private static readonly Color Color4 = System.Drawing.Color.Black;
+        private static readonly (double, Color)[] ColorsTransitions =
+        {
+            (0, System.Drawing.Color.FromArgb(100, 0 , 1)),
+            (0.3, System.Drawing.Color.Firebrick),
+            (0.6, System.Drawing.Color.Yellow),
+            (0.9, System.Drawing.Color.FromArgb(50, 0, 1)),
+            (1, System.Drawing.Color.Black)
+        };
+            
         private static List<int> Colors = CreateAgeColor();
         
         private static List<int> CreateAgeColor()
         {
-            var break1 = (int)(StartAge * Break1);
-            var break2 = (int)(StartAge * Break2);
-            var break3 = StartAge - (break1 + break2);
-            
-            return GenerateSequence(Color1, Color2, break1)
-                .Concat(GenerateSequence(Color2, Color3, break2 + 1).Skip(1))
-                .Concat(GenerateSequence(Color3, Color4, break3 + 1).Skip(1))
-                .Select(x => x.ToArgb())
-                .ToList();
+            Debug.Assert(ColorsTransitions.Length > 1);
+            var colors = Enumerable.Empty<Color>();
+
+            for (var i = 0; i < ColorsTransitions.Length - 1; i++)
+            {
+                var (startPercentage, startColor) = ColorsTransitions[i];
+                var (nextPercentage, nextColor) = ColorsTransitions[i + 1];
+                var total = nextPercentage - startPercentage;
+                var count = (int)(total * StartAge);
+                colors = colors.Concat(GenerateSequence(startColor, nextColor, i == 0 ? count : count + 1).Skip(i == 0 ? 0 : 1));
+            }
+            return colors.Select(c => c.ToArgb()).ToList();
         }
         
-        private static List<Color> GenerateSequence(Color start, Color end, int colorCount)
+        private static IEnumerable<Color> GenerateSequence(Color start, Color end, int colorCount)
         {
-            var ret = new List<Color>();
             for (var n = 0; n < colorCount; n++)
             {
                 var ratio = n / (double)(colorCount - 1);
@@ -96,10 +108,8 @@ namespace PondSharp.Examples
                 var gComponent = negativeRatio * start.G + ratio * end.G;
                 var bComponent = negativeRatio * start.B + ratio * end.B;
 
-                ret.Add(System.Drawing.Color.FromArgb((byte)aComponent, (byte)rComponent, (byte)gComponent, (byte)bComponent));
+                yield return System.Drawing.Color.FromArgb((byte)aComponent, (byte)rComponent, (byte)gComponent, (byte)bComponent);
             }
-
-            return ret;
         }
     }
     

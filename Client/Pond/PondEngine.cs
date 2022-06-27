@@ -51,8 +51,10 @@ namespace PondSharp.Client.Pond
             return Math.Abs(entity.X - x + entity.Y - y) <= 2 &&
                    x >= MinX && x <= MaxX &&
                    y >= MinY && y <= MaxY && 
-                   _entityLayer.GetAt(x, y) == null;
+                   !(_entityLayer.GetAt(x, y)?.IsBlocking ?? false);
         }
+
+        public override bool CanChangeIsBlocking(IEntity entity) => true;
 
         public void InsertEntity(Entity entity, int id, int x = 0, int y = 0, int color = 0xFFFFFF, int viewDistance = 0)
         {

@@ -1,6 +1,10 @@
-﻿@use 'vendor/bootstrap.min.css';
-@use 'vendor/open-iconic-bootstrap.min.css';
-@use 'blazor.scss';
+﻿$bootstrap-icons-font-src: 
+    url("~bootstrap-icons/font/fonts/bootstrap-icons.woff2") format("woff2"),
+    url("~bootstrap-icons/font/fonts/bootstrap-icons.woff") format("woff") !important;
+
+@import '~bootstrap/scss/bootstrap';
+@import '~bootstrap-icons/font/bootstrap-icons.scss';
+@import 'blazor.scss';
 
 .editor-files {
     border-radius: .2rem .2rem 0 0;

@@ -114,7 +114,7 @@ export class PondRenderer {
     stop = () => this.application.stop();
 
     resize(width: number, height: number, gridSize: number) {
-        console.log(`Resize: ${width}x${height} gridSize: ${gridSize}`);
+        console.debug(`Resize: ${width}x${height} gridSize: ${gridSize}`);
         this.width = width;
         this.height = height;
         this.gridSize = gridSize;

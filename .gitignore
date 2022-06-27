@@ -1,13 +1,9 @@
 /Client/node_modules
-/Client/wwwroot/js
-/Client/wwwroot/user-scripts/
+/Client/wwwroot/*
 /Client/SampleProject/PondSharp.Examples/*.cs
 /Client/SampleProject/PondSharp.Examples/*.dll
 /Client/SampleProject/PondSharp.Examples/PondSharp.UserScripts.xml
-/Client/wwwroot/sample-project.zip
 /Build/
-
-
 
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839

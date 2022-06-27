@@ -16,11 +16,16 @@ namespace PondSharp.UserScripts
         /// <summary>
         /// The minimum value. Default: 0
         /// </summary>
-        public int Min = 0;
+        public double Min = 0;
         
         /// <summary>
         /// The maximum value. Default: 100
         /// </summary>
-        public int Max = 100;
+        public double Max = 100;
+
+        /// <summary>
+        /// The step value. Default: 1
+        /// </summary>
+        public double Step = 1;
     }
 }

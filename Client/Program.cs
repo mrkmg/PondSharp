@@ -17,7 +17,6 @@ namespace PondSharp.Client
         public static async Task Main(string[] args)
         {
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
-            builder.RootComponents.Add<App>("app");
             ConfigureServices(builder);
             var host = builder.Build();
             ConfigureProviders(host.Services);
@@ -26,6 +25,7 @@ namespace PondSharp.Client
 
         private static void ConfigureServices(WebAssemblyHostBuilder builder)
         {
+            builder.RootComponents.Add<App>("app");
             builder.Services.AddBlazoredLocalStorage();
             builder.Services.AddScoped(_ => new HttpClient
             {

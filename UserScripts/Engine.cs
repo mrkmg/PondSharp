@@ -69,8 +69,7 @@ namespace PondSharp.UserScripts
         #endregion
 
         #region ViewDistance
-
-
+        
         public virtual bool CanChangeViewDistance(IEntity entity, int distance) => true;
         public bool ChangeViewDistance(int entityId, int distance) => ChangeViewDistance(GetEntity(entityId), distance);
         public bool ChangeViewDistance(IEntity entity, int distance)
@@ -84,6 +83,24 @@ namespace PondSharp.UserScripts
             if (!(entity is Entity aEntity)) return;
             aEntity.ViewDistance = distance;
             OnEntityViewDistanceChanged(entity);
+        }
+
+        #endregion
+        
+        #region IsBlocking
+        
+        public virtual bool CanChangeIsBlocking(IEntity entity) => false;
+        public bool ChangeIsBlocking(int entityId, bool isBlocking) => ChangeIsBlocking(GetEntity(entityId), isBlocking);
+        public bool ChangeIsBlocking(IEntity entity, bool isBlocking)
+        {
+            if (!CanChangeIsBlocking(entity)) return false;
+            WriteEntityIsBlocking(entity, isBlocking);
+            return true;
+        }
+        private void WriteEntityIsBlocking(IEntity entity, bool isBlocking)
+        {
+            if (!(entity is Entity aEntity)) return;
+            aEntity.IsBlocking = isBlocking;
         }
 
         #endregion

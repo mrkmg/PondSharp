@@ -1,6 +1,7 @@
 @using System.ComponentModel.DataAnnotations
 @using System.Reflection
 @using System.Runtime.InteropServices
+@using System.Timers
 @inject IJSRuntime JsRuntime;
 
 <div @ref="_pondHolder" class="border border-light" style="width: @(Width * GridSize + 2)px; height: @(Height * GridSize + 2)px; padding: 0"></div>
@@ -8,15 +9,41 @@
 @code {
     private IJSInProcessRuntime Js => (IJSInProcessRuntime) JsRuntime;
     private Microsoft.JSInterop.WebAssembly.WebAssemblyJSRuntime JsRaw => (Microsoft.JSInterop.WebAssembly.WebAssemblyJSRuntime) JsRuntime;
+    private int _width;
+    private int _height;
+    private int _gridSize;
+    private Timer _timer = null;
     
     [Parameter][Required]
-    public int Width { get; set; }
+    public int Width { 
+        get => _width;
+        set
+        {
+            _width = value;
+            _timer?.Stop();
+            _timer?.Start();
+        }
+    }
     
     [Parameter][Required]
-    public int Height { get; set; }
+    public int Height { 
+        get => _height;
+        set
+        {
+            _height = value;
+            _timer?.Stop();
+            _timer?.Start();
+        } }
     
     [Parameter][Required]
-    public int GridSize { get; set; }
+    public int GridSize { 
+        get => _gridSize;
+        set
+        {
+            _gridSize = value;
+            _timer?.Stop();
+            _timer?.Start();
+        } }
 
     public event EventHandler<ClickArgs> OnClick;
 
@@ -27,6 +54,9 @@
 
     protected override void OnInitialized()
     {
+        _timer = new(100);
+        _timer.AutoReset = false;
+        _timer.Elapsed += (_, _) => Resize();
         _changeQueue = new(WriteQueue);
     }
     
@@ -65,7 +95,7 @@
 
     public void FlushChangeQueue() => _changeQueue.Flush();
 
-    public ValueTask Resize() =>
+    public ValueTask Resize() => 
         JsRuntime.InvokeVoidAsync(Method("resize"), Width, Height, GridSize);
 
     public void Clear() =>

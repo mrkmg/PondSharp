@@ -35,6 +35,9 @@ namespace PondSharp.UserScripts
         public int ViewDistance { get; internal set; }
 
         /// <inheritdoc />
+        public bool IsBlocking { get; internal set; } = true;
+
+        /// <inheritdoc />
         public int WorldMinX => Engine.MinX;
 
         /// <inheritdoc />
@@ -45,7 +48,7 @@ namespace PondSharp.UserScripts
 
         /// <inheritdoc />
         public int WorldMaxY => Engine.MaxY;
-        
+
         /// <summary>
         /// Target position X to move toward.
         /// </summary>
@@ -162,6 +165,13 @@ namespace PondSharp.UserScripts
         /// <param name="distance">Distance that visible entities will use.</param>
         /// <returns>If the entity's view distance was change the specified distance.</returns>
         protected bool ChangeViewDistance(int distance) => Engine.ChangeViewDistance(this, distance);
+
+        /// <summary>
+        /// Tries to change the entity's blocking status to the specified status.
+        /// </summary>
+        /// <param name="isBlocking">Should block other entities.</param>
+        /// <returns>If the entities blocking status was changed.</returns>
+        protected bool SetIsBlocking(bool isBlocking) => Engine.ChangeIsBlocking(this, isBlocking);
 
         /// <summary>
         /// Destroys the entity, completely removing them from the world.

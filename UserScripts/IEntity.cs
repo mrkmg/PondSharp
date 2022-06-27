@@ -52,5 +52,10 @@ namespace PondSharp.UserScripts
         /// Maximum Y of World
         /// </summary>
         int WorldMaxY { get; }
+        
+        /// <summary>
+        /// Is the entity blocking.
+        /// </summary>
+        bool IsBlocking { get; }
     }
 }

@@ -1,5 +1,7 @@
 const path = require('path');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
 module.exports = (env) => {
     return {
@@ -10,16 +12,40 @@ module.exports = (env) => {
         watchOptions: {
             ignored: ["node_modules/**"]
         },
+        plugins: [
+            new CleanWebpackPlugin(),
+            new HtmlWebpackPlugin({
+                template: './index.html',
+                filename: '../index.html',
+                chunks: ['main', 'vendor', 'monaco', "pixi", 'styles'],
+            }),
+            new MiniCssExtractPlugin(),
+        ],
         module: {
             rules: [{
                 test: /\.tsx?$/,
                 use: 'ts-loader',
                 exclude: /node_modules/
             }, {
-                test: /\.s?css$/i,
-                use: ['style-loader', 'css-loader', 'sass-loader'],
+                test: /\.css$/,
+                use: [
+                    MiniCssExtractPlugin.loader, 
+                    {loader: "css-loader", options: {sourceMap: true}}
+                ]
             }, {
-                test: /\.(ttf|woff|eot|otf|svg)$/i,
+                test: /\.scss$/i,
+                use: [
+                    MiniCssExtractPlugin.loader,
+                    {loader: "css-loader", options: {sourceMap: true}},
+                    {
+                        loader: 'sass-loader',
+                        options: {
+                            sourceMap: true,
+                        }
+                    },
+                ],
+            }, {
+                test: /\.(ttf|woff|woff2|eot|otf|svg)$/i,
                 use: [{
                     loader: 'file-loader',
                     options: {
@@ -35,30 +61,42 @@ module.exports = (env) => {
         optimization: {
             minimize: !!env.release,
             splitChunks: {
-                chunks: "all",
+                chunks: "initial",
                 cacheGroups: {
                     vendors: {
                         test: /[\\/]node_modules[\\/]/,
-                        name: "vendors"
+                        name: "vendors",
+                        reuseExistingChunk: true,
+                        priority: 1,
+                    },
+                    monaco: {
+                        test: /[\\/]node_modules[\\/]monaco-editor[\\/]/,
+                        name: "monaco",
+                        reuseExistingChunk: true,
+                        priority: 2,
+                    },
+                    pixi: {
+                        test: /[\\/]node_modules[\\/]pixi.js[\\/]/,
+                        name: "pixi",
+                        reuseExistingChunk: true,
+                        priority: 2,
                     }
                 }
             }
         },
-        plugins: [
-            new CleanWebpackPlugin()
-        ],
         entry: {
-            main: {import: './wwwroot-src/ts/main.ts'},
+            main: {import: './main.ts'},
+            styles: {import: './css/app.scss'},
             'editor.worker': 'monaco-editor/esm/vs/editor/editor.worker.js',
-            'json.worker': 'monaco-editor/esm/vs/language/json/json.worker',
-            'css.worker': 'monaco-editor/esm/vs/language/css/css.worker',
-            'html.worker': 'monaco-editor/esm/vs/language/html/html.worker',
-            'ts.worker': 'monaco-editor/esm/vs/language/typescript/ts.worker'
+            'json.worker': 'monaco-editor/esm/vs/language/json/json.worker.js',
+            'css.worker': 'monaco-editor/esm/vs/language/css/css.worker.js',
+            'html.worker': 'monaco-editor/esm/vs/language/html/html.worker.js',
+            'ts.worker': 'monaco-editor/esm/vs/language/typescript/ts.worker.js'
         },
         output: {
             globalObject: 'self',
-            path: path.resolve(__dirname, 'wwwroot/js'),
-            publicPath: "js/"
+            path: path.resolve(__dirname, 'bin/', env.release ? "Release" : "Debug", 'net6.0', 'wwwroot', 'assets'),
+            publicPath: "./assets/"
         }
     }
 };

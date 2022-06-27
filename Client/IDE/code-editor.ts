@@ -4,18 +4,18 @@ import {editor} from "monaco-editor";
 self.MonacoEnvironment = {
     getWorkerUrl: function (moduleId: any, label: any) {
         if (label === 'json') {
-            return './js/json.worker.js';
+            return './assets/json.worker.js';
         }
         if (label === 'css' || label === 'scss' || label === 'less') {
-            return './js/css.worker.js';
+            return './assets/css.worker.js';
         }
         if (label === 'html' || label === 'handlebars' || label === 'razor') {
-            return './js/html.worker.js';
+            return './assets/html.worker.js';
         }
         if (label === 'typescript' || label === 'javascript') {
-            return './js/ts.worker.js';
+            return './assets/ts.worker.js';
         }
-        return './js/editor.worker.js';
+        return './assets/editor.worker.js';
     }
 };
 

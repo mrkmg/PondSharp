@@ -44,8 +44,16 @@
                             {
                                 <div class="form-group">
                                     <label class="form-label">@(adjustable.Name)</label><br />
-                                    <small>@(adjustable.Value)</small>
-                                    <input class="form-control" type="range" @bind="adjustable.Value" min="@adjustable.Attribute.Min" max="@adjustable.Attribute.Max" /> 
+                                    @if (adjustable.Type == typeof(double))
+                                    {
+                                        <small>@(adjustable.ValueAsDouble)</small>
+                                        <input class="form-control" type="range" @bind="adjustable.ValueAsDouble" step="@adjustable.Attribute.Step" min="@adjustable.Attribute.Min" max="@adjustable.Attribute.Max" />
+                                    }
+                                    else
+                                    {
+                                        <small>@(adjustable.ValueAsInt)</small>
+                                        <input class="form-control" type="range" @bind="adjustable.ValueAsInt" step="@adjustable.Attribute.Step" min="@adjustable.Attribute.Min" max="@adjustable.Attribute.Max" />
+                                    }
                                 </div>
                             }
                         </div>
@@ -278,10 +286,6 @@
         _manager = null;
         await SetSize();
         _engine = new(_pondWidth, _pondHeight);
-        _canvas.Width = _pondWidth;
-        _canvas.Height = _pondHeight;
-        _canvas.GridSize = _gridSize;
-        await _canvas.Resize();
         TryCreatePondManager();
         await StartPond().ConfigureAwait(false);
     }
@@ -366,17 +370,20 @@
         public PropertyInfo PropertyInfo;
         public PondAdjustableAttribute Attribute;
 
+        public Type Type => PropertyInfo.PropertyType;
         public string Name => Attribute.Name ?? PropertyInfo.Name;
         
-        public int Value
+        public int ValueAsInt
         {
-            get => GetValue();
-            set => SetValue(value);
+            get => (int)PropertyInfo.GetValue(null)!;
+            set => PropertyInfo.SetValue(null, value);
         }
-
-        private int GetValue() => (int)PropertyInfo.GetValue(null)!;
-        // TODO: Add in validation based on attribute
-        private void SetValue(int value) => PropertyInfo.SetValue(null, value);
+        
+        public double ValueAsDouble
+        {
+            get => (double)PropertyInfo.GetValue(null)!;
+            set => PropertyInfo.SetValue(null, value);
+        }
     }
 
     private class JsInterface

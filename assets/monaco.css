@@ -1084,7 +1084,7 @@
 
 @font-face {
 	font-family: "codicon";
-	src: url(/assets/fonts/codicon.ttf) format("truetype");
+	src: url(./assets/fonts/codicon.ttf) format("truetype");
 }
 
 .codicon[class*='codicon-'] {

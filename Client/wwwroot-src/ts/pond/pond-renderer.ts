@@ -27,10 +27,13 @@ export class PondRenderer {
     
     private init() {
         if (this.application) {
-            console.debug("Removing PIXI instance"); 
+            console.debug("Removing PIXI instance");
+            this.application.view.parentNode.removeChild(this.application.view);
             this.application.destroy(true, {children: true, texture: true, baseTexture: true});
-            this.element.removeChild(this.element.children.item(0));
             this.application = null;
+            const child = this.element.children.item(0);
+            if (child)
+                this.element.removeChild(this.element.children.item(0));
         }
         console.debug("Creating PIXI instance");
         // noinspection JSSuspiciousNameCombination
@@ -111,9 +114,9 @@ export class PondRenderer {
     stop = () => this.application.stop();
 
     resize(width: number, height: number, gridSize: number) {
+        console.log(`Resize: ${width}x${height} gridSize: ${gridSize}`);
         this.width = width;
         this.height = height;
-        this.gridSize = gridSize;
         this.gridSize = gridSize;
         this.init();
     }

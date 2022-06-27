@@ -15,3 +15,10 @@ win.createEditor = async function (elementId: string, globalName: string) {
     win[globalName] = new CodeEditor(elementId)
 }
 win.getSize = () => [win.innerWidth, win.innerHeight]
+win.bindWindowResize = (obj: any) => {
+    let windowResizeDebounce: NodeJS.Timeout;
+    window.onresize = () => {
+        clearTimeout(windowResizeDebounce);
+        windowResizeDebounce = setTimeout(() => obj.invokeMethodAsync("OnWindowResized"), 1000);
+    }
+}

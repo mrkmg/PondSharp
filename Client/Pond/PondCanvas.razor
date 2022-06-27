@@ -65,6 +65,9 @@
 
     public void FlushChangeQueue() => _changeQueue.Flush();
 
+    public ValueTask Resize() =>
+        JsRuntime.InvokeVoidAsync(Method("resize"), Width, Height, GridSize);
+
     public void Clear() =>
     // TODO make this clear entities too
         _changeQueue.Reset();

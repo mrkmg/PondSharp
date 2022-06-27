@@ -7,7 +7,7 @@ using PondSharp.UserScripts;
 
 namespace PondSharp.Client.Pond
 {
-    public sealed class PondManager
+    public sealed class PondManager : IDisposable
     {
         private readonly PondCanvas _pondCanvas;
         private readonly IEntityCreator _entityCreator;
@@ -139,6 +139,19 @@ namespace PondSharp.Client.Pond
                 _pondCanvas.DestroyEntity(instance.Id);
             }
             _pondEngine.ClearAllEntities();
+        }
+
+        public void Dispose()
+        {
+            Reset();
+            
+            _pondEngine.EntityAdded -= EngineOnEntityAdded;
+            _pondEngine.EntityMoved -= EngineOnEntityMoved;
+            _pondEngine.EntityColorChanged -= EngineOnEntityColorChanged;
+            _pondEngine.EntityRemoved -= EngineOnEntityRemoved;
+
+            _pondCanvas.OnClick -= PondCanvasClicked;
+            _tickTimer?.Dispose();
         }
     }
 }

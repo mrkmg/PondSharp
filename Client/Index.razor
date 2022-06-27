@@ -154,16 +154,28 @@
     protected override async Task OnInitializedAsync()
     {
         _debugUpdateTimer.Elapsed += (_,_) => StateHasChanged();
+        await SetSize();
+        _engine = new(_pondWidth, _pondHeight);
+        TryCreatePondManager();
+    }
 
+    private async Task SetSize()
+    {
         var size = await JsRuntime.InvokeAsync<int[]>("getSize");
         if (size.Length == 2)
         {
             _pondWidth = (size[0] - 250) / _gridSize;
             _pondHeight = (size[1] - 250) / _gridSize;
         }
+    }
 
-        _engine = new(_pondWidth, _pondHeight);
-        TryCreatePondManager();
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var jsInterface = new JsInterface(ResetPondManager);
+            await JsRuntime.InvokeAsync<string>("bindWindowResize", DotNetObjectReference.Create(jsInterface));
+        }
     }
     
     protected override void OnAfterRender(bool firstRender)
@@ -260,6 +272,20 @@
             RealCreateEntity(fullName);
     }
     
+    private async ValueTask ResetPondManager()
+    {
+        _manager?.Dispose();
+        _manager = null;
+        await SetSize();
+        _engine = new(_pondWidth, _pondHeight);
+        _canvas.Width = _pondWidth;
+        _canvas.Height = _pondHeight;
+        _canvas.GridSize = _gridSize;
+        await _canvas.Resize();
+        TryCreatePondManager();
+        await StartPond().ConfigureAwait(false);
+    }
+    
     private void RealCreateEntity(string fullName)
     {
         _manager.InitializeAndCreateEntity(_ideElement.CreateInstance<Entity>(fullName));
@@ -351,6 +377,19 @@
         private int GetValue() => (int)PropertyInfo.GetValue(null)!;
         // TODO: Add in validation based on attribute
         private void SetValue(int value) => PropertyInfo.SetValue(null, value);
+    }
+
+    private class JsInterface
+    {
+        private readonly Func<ValueTask> _windowResized;
+        
+        public JsInterface(Func<ValueTask> windowResized)
+        {
+            _windowResized = windowResized;
+        }
+        
+        [JSInvokable]
+        public async ValueTask OnWindowResized() => await _windowResized();
     }
 
 }

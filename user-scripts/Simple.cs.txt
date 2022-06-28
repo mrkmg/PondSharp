@@ -11,14 +11,18 @@ namespace PondSharp.Examples
     {
         [PondAdjustable(Min = 1, Max = 100, Name = "Speed")]
         private static int StartingSpeed { get; set; } = 20;
-        
+
+        [PondAdjustable(Type = InputType.RgbColorPicker, Inheritable = false)]
+        private static int StartColor { get; set; } = 0xFFFFFF;
+
         private double _powerX;
         private double _powerY;
         private double _currentX;
         private double _currentY;
-        
+
         protected override void OnCreated()
         {
+            ChangeColor(StartColor);
             ResetPower();
         }
         

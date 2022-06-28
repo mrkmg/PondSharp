@@ -17,7 +17,7 @@
         "ASPNETCORE_WEBROOT": "bin\\$(Configuration)\\net6.0\\wwwroot"
       }
     },
-    "PondSharp (watch)": {
+    "PondSharp-watch": {
       "commandName": "Executable",
       "executablePath": "dotnet",
       "commandLineArgs": "watch run",
@@ -28,7 +28,8 @@
       "inspectUri": "{wsProtocol}://{url.hostname}:{url.port}/_framework/debug/ws-proxy?browser={browserInspectUri}",
       "applicationUrl": "http://localhost:5500",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_WEBROOT": "bin\\$(Configuration)\\net6.0\\wwwroot"
       }
     }
   }

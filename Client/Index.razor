@@ -50,7 +50,6 @@
                                         @switch(adjustable.Attribute.Type)
                                         {
                                             case InputType.FreeForm:
-                                                <small>@(adjustable.ValueAsDouble)</small>
                                                 <input class="form-control h-auto" type="number" @bind="adjustable.ValueAsDouble" step="@adjustable.Attribute.Step" min="@adjustable.Attribute.Min" max="@adjustable.Attribute.Max" />
                                                 break;
                                             case InputType.Slider:
@@ -68,7 +67,6 @@
                                         @switch (adjustable.Attribute.Type)
                                         {
                                             case InputType.FreeForm:
-                                                <small>@(adjustable.ValueAsInt)</small>
                                                 <input class="form-control h-auto" type="number" @bind="adjustable.ValueAsInt" step="@adjustable.Attribute.Step" min="@adjustable.Attribute.Min" max="@adjustable.Attribute.Max" />
                                                 break;
                                             case InputType.Slider:

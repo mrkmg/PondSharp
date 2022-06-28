@@ -52,14 +52,3 @@ app {
   right: 0.75rem;
   top: 0.5rem;
 }
-
-@media (min-width: 768px) {
-  app {
-    flex-direction: row;
-  }
-
-  .main > div {
-    padding-left: 2rem !important;
-    padding-right: 1.5rem !important;
-  }
-}

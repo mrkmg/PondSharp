@@ -12,14 +12,13 @@
 @implements IEntityCreator
 
 <div class="editor-files">
-    <div class="btn-group btn-group-sm top-tabs">
+    <div class="btn-group ide-file-toolbar">
         @foreach (var name in SourceNames)
         {
-            <button class="btn @(_selectedSource == name ? "btn-primary" : "btn-secondary")" @onclick="_ => SelectSource(name)">
+            <button class="btn filename @(_selectedSource == name ? "btn-primary" : "btn-secondary")" @onclick="_ => SelectSource(name)">
                 @name
             </button>
-            
-            <div class="btn-group-vertical @(_selectedSource == name ? "bg-primary" : "bg-secondary")">
+            <div class="mr-1 btn-group-vertical actions">
                 <button class="btn btn-icon @(_selectedSource == name ? "btn-primary" : "btn-secondary")" @onclick="_ => RenameScript(name)">
                     <i class="bi bi-wrench" title="Rename"></i>
                 </button>
@@ -28,8 +27,8 @@
                 </button>
             </div>
         }
-        <button class="btn btn-success" @onclick="NewSource">+</button>
     </div>
+    <button class="btn btn-success" @onclick="NewSource">+</button>
 </div>
 @if(_editorPromptType != EditorPromptType.None)
 {
@@ -44,7 +43,8 @@
         @if (_editorPromptType == EditorPromptType.Add || _editorPromptType == EditorPromptType.Rename)
         {
             <div class="input-group" style="max-width: 400px">
-                <input class="form-control" @bind="_editorPromptName" onkeyup="const e=document.createEvent('HTMLEvents'); e.initEvent('change', false, true);this.dispatchEvent(e)" />
+                <!-- The onkeyup event is used to trigger a "change" event on every keystroke. -->
+                <input class="form-control" @bind="_editorPromptName" onkeyup="const e=document.createEvent('HTMLEvents'); e.initEvent('change', false, true);this.dispatchEvent(e)"/>
                 <div class="input-group-append">
                     <span class="input-group-text">.cs</span>
                 </div>

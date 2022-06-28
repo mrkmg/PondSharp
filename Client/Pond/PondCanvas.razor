@@ -84,11 +84,11 @@
     public void ChangeEntityColor(int entityId, int color) => 
         _changeQueue.Next().ForColor(entityId, color);
 
-    public ValueTask Start() =>
-        JsRuntime.InvokeVoidAsync(Method("start"));
-    
-    public ValueTask Stop() =>
-        JsRuntime.InvokeVoidAsync(Method("stop"));
+    // public ValueTask Start() =>
+    //     JsRuntime.InvokeVoidAsync(Method("start"));
+    //
+    // public ValueTask Stop() =>
+    //     JsRuntime.InvokeVoidAsync(Method("stop"));
 
     private void WriteQueue(IReadOnlyCollection<EntityChangeRequest> queue) => 
         JsRaw.InvokeUnmarshalled<IReadOnlyCollection<EntityChangeRequest>, bool>(Method("processEntityChangeRequestsRaw"), queue);

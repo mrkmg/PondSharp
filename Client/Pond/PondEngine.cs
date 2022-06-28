@@ -16,10 +16,13 @@ namespace PondSharp.Client.Pond
             ResetSize();
         }
 
+        private int _nextId;
         private Layer<Entity> _entityLayer;
-        private List<Entity> _entities = new();
+        private readonly List<Entity> _entities = new();
         private readonly Dictionary<int, Entity> _entitiesById = new();
-        private readonly List<int> _entitiesToRemoveById = new();
+        private readonly List<Entity> _entitiesToRemove = new();
+        private readonly List<Entity> _entitiesToAdd = new();
+        private readonly Random _random = new();
         
         public override IEnumerable<IEntity> Entities => _entities;
         public override IEntity GetEntity(int entityId) => _entitiesById[entityId];
@@ -32,6 +35,10 @@ namespace PondSharp.Client.Pond
         private void ResetSize()
         {
             _entityLayer = new(MinX, MinY, MaxX, MaxY);
+            foreach (var entity in _entities)
+            {
+                _entityLayer.Add(entity, entity.X, entity.Y);
+            }
         }
 
         private IEnumerable<IEntity> GetEntitiesAround(int centerX, int centerY, int dist)
@@ -41,35 +48,66 @@ namespace PondSharp.Client.Pond
 
         public void Tick()
         {
-            foreach (var entity in _entities) DoTick(entity);
-            foreach (var entityId in _entitiesToRemoveById) DestroyEntityActual(entityId);
-            _entitiesToRemoveById.Clear();
+            foreach (var entity in _entitiesToRemove)
+                DestroyEntityActual(entity);
+            _entitiesToRemove.Clear();
+            
+            foreach (var entity in _entitiesToAdd)
+                InsertEntityActual(entity);
+            _entitiesToAdd.Clear();
+            
+            foreach (var entity in _entities)
+                DoTick(entity);
         }
         
         public override bool CanMoveTo(IEntity entity, int x, int y)
-        {
-            return Math.Abs(entity.X - x + entity.Y - y) <= 2 &&
-                   x >= MinX && x <= MaxX &&
-                   y >= MinY && y <= MaxY && 
-                   !(_entityLayer.GetAt(x, y)?.IsBlocking ?? false);
-        }
+            => Math.Abs(entity.X - x + entity.Y - y) <= 2 &&
+               x >= MinX && x <= MaxX &&
+               y >= MinY && y <= MaxY && 
+               !(_entityLayer.GetAt(x, y)?.IsBlocking ?? false);
 
         public override bool CanChangeIsBlocking(IEntity entity) => true;
-
-        public void InsertEntity(Entity entity, int id, int x = 0, int y = 0, int color = 0xFFFFFF, int viewDistance = 0)
+        public override bool CanCreateEntity<T>(IEntity entity) => true;
+        
+        public override T CreateEntity<T>(EntityOptions options)
         {
-            InitializeEntity(entity, new(id)
+            var entity = Activator.CreateInstance<T>();
+            InsertEntity(entity, options);
+            return entity;
+        }
+
+        private readonly object _idLock = new();
+        public void InsertEntity(Entity entity, EntityOptions options)
+        {
+            int id;
+            lock (_idLock)
+                id = _nextId++;
+            InitializeEntity(entity, new (id)
             {
-                X = x, 
-                Y = y, 
-                Color = color, 
-                ViewDistance = viewDistance
+                X = options.X ?? _random.Next(MinX, MaxX),
+                Y = options.Y ?? _random.Next(MinY, MaxY),
+                Color = options.Color,
+                ViewDistance = options.ViewDistance,
+                IsBlocking = options.IsBlocking
             });
-            _entitiesById.Add(entity.Id, entity);
-            _entityLayer.Add(entity, entity.X, entity.Y);
-            _entities.Add(entity);
-            OnEntityAdded(entity);
-            WasCreated(entity);
+            _entitiesToAdd.Add(entity);
+        }
+
+        private void InsertEntityActual(Entity entity)
+        {
+            try
+            {
+                _entitiesById.Add(entity.Id, entity);
+                _entityLayer.Add(entity, entity.X, entity.Y);
+                _entities.Add(entity);
+                OnEntityAdded(entity);
+                WasCreated(entity);
+            }
+            catch (Exception)
+            {
+                Console.WriteLine($"Error inserting entity ${entity.Id}");
+                throw;
+            }
         }
         
         public override bool MoveTo(IEntity iEntity, int x, int y)
@@ -86,23 +124,22 @@ namespace PondSharp.Client.Pond
         public override IEnumerable<IEntity> GetVisibleEntities(IEntity entity) =>
             GetEntitiesAround(entity.X, entity.Y, entity.ViewDistance).Where(e => e.Id != entity.Id);
 
-        public override bool DestroyEntity(int entityId)
+        public override bool DestroyEntity(Entity entity)
         {
-            if (!_entitiesById.ContainsKey(entityId)) return false;
+            if (!_entitiesById.ContainsKey(entity.Id)) return false;
             // This is inefficient if many entities are removed every tick.
-            if (_entitiesToRemoveById.Contains(entityId)) return false; 
-            _entitiesToRemoveById.Add(entityId);
+            if (_entitiesToRemove.Contains(entity)) return false; 
+            _entitiesToRemove.Add(entity);
             return true;
         }
 
-        private void DestroyEntityActual(int entityId)
+        private void DestroyEntityActual(Entity entity)
         {
-            var entity = _entitiesById[entityId];
             WasDestroyed(entity);
             OnEntityRemoved(entity);
             _entityLayer.Remove(entity, entity.X, entity.Y);
             _entities.Remove(entity);
-            _entitiesById.Remove(entityId);
+            _entitiesById.Remove(entity.Id);
         }
 
         public void ClearAllEntities()

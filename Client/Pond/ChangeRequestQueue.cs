@@ -37,8 +37,10 @@ internal sealed class ChangeRequestQueue<T> where T : IResettable
 
     public ref T Next()
     {
-        if (++_index >= QueueLength)
+        if (_index + 1 >= QueueLength)
             Flush();
+     
+        _index++;
         return ref _requests[_index];
     }
 }

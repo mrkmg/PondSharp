@@ -14,7 +14,10 @@ namespace PondSharp.UserScripts
         public abstract IEnumerable<IEntity> Entities { get; }
         public abstract IEntity GetEntity(int entityId);
         public abstract IEntity GetEntityAt(int x, int y);
-        public abstract bool DestroyEntity(int entityId);
+        
+        public abstract bool DestroyEntity(Entity entity);
+        public abstract bool CanCreateEntity<T>(IEntity entity);
+        public abstract T CreateEntity<T>(EntityOptions options) where T : Entity;
 
         public abstract IEnumerable<IEntity> GetVisibleEntities(IEntity entity);
 
@@ -144,6 +147,17 @@ namespace PondSharp.UserScripts
         
     }
 
+    public class EntityOptions
+    {
+        public static EntityOptions Default => new EntityOptions();
+        
+        public int? X;
+        public int? Y;
+        public int Color = 0xFFFFFF;
+        public int ViewDistance = 0;
+        public bool IsBlocking = true;
+    }
+    
     public class EntityInitialization
     {
         public readonly int Id;
@@ -151,6 +165,7 @@ namespace PondSharp.UserScripts
         public int Y;
         public int Color = 0xFFFFFF;
         public int ViewDistance;
+        public bool IsBlocking = true;
 
         public EntityInitialization(int id)
         {

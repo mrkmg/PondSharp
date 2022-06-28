@@ -21,10 +21,10 @@
             
             <div class="btn-group-vertical @(_selectedSource == name ? "bg-primary" : "bg-secondary")">
                 <button class="btn btn-icon @(_selectedSource == name ? "btn-primary" : "btn-secondary")" @onclick="_ => RenameScript(name)">
-                    <span class="oi oi-wrench" title="Rename" aria-hidden="true"></span>
+                    <i class="bi bi-wrench" title="Rename"></i>
                 </button>
                 <button class="btn btn-icon @(_selectedSource == name ? "btn-primary" : "btn-secondary")" @onclick="_ => DeleteScript(name)">
-                    <span class="oi oi-circle-x" title="Delete" aria-hidden="true"></span>
+                    <i class="bi bi-x-circle" title="Delete"></i>
                 </button>
             </div>
         }

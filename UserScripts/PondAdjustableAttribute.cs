@@ -27,5 +27,34 @@ namespace PondSharp.UserScripts
         /// The step value. Default: 1
         /// </summary>
         public double Step = 1;
+        
+        /// <summary>
+        /// The input type. Default: Slider
+        /// </summary>
+        public InputType Type = InputType.Slider;
+
+        /// <summary>
+        /// Show this selector on inherited entities. Default: true
+        /// </summary>
+        public bool Inheritable = true;
     }
+}
+
+/// <summary>
+/// The input type
+/// </summary>
+public enum InputType
+{
+    /// <summary>
+    /// A number input
+    /// </summary>
+    FreeForm,
+    /// <summary>
+    /// A range input
+    /// </summary>
+    Slider,
+    /// <summary>
+    /// A HTML5 color input
+    /// </summary>
+    RgbColorPicker,
 }

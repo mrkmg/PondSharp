@@ -37,6 +37,7 @@ module.exports = (env) => {
                 use: [
                     MiniCssExtractPlugin.loader,
                     {loader: "css-loader", options: {sourceMap: true}},
+                    'resolve-url-loader',
                     {
                         loader: 'sass-loader',
                         options: {
@@ -50,7 +51,8 @@ module.exports = (env) => {
                     loader: 'file-loader',
                     options: {
                         name: '[name].[ext]',
-                        outputPath: './fonts'
+                        outputPath: './fonts',
+                        publicPath: './fonts',
                     }
                 }]
             }]

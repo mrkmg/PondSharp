@@ -16,7 +16,6 @@ namespace PondSharp.Client.Pond
         private readonly Timer _tickTimer;
         private DateTime _lastTime = DateTime.Now;
         private static readonly Random Random = new();
-        private int _nextId;
         
         public double CurrentTickTime = 1;
         public bool IsRunning => _tickTimer.Enabled;
@@ -46,7 +45,8 @@ namespace PondSharp.Client.Pond
 
         private void PondCanvasClicked(object _, PondCanvas.ClickArgs args)
         {
-            if (args.X >= _pondEngine.MinX && args.X <= _pondEngine.MaxX && args.Y >= _pondEngine.MinY && args.Y <= _pondEngine.MaxY) InitializeAndCreateEntity(_entityCreator.CreateSelectedEntity(), args.X, args.Y);
+            if (args.X >= _pondEngine.MinX && args.X <= _pondEngine.MaxX && args.Y >= _pondEngine.MinY && args.Y <= _pondEngine.MaxY) 
+                InitializeAndCreateEntity(_entityCreator.CreateSelectedEntity(), new() {X = args.X, Y = args.Y});
         }
 
         private void Tick()
@@ -63,7 +63,7 @@ namespace PondSharp.Client.Pond
             {
                 Console.WriteLine($"Tick Exception: ${e.Message} ${e.StackTrace}");
                 _pondCanvas.Clear();
-                Stop().RunSynchronously();
+                Stop();
             }
 
         }
@@ -91,17 +91,15 @@ namespace PondSharp.Client.Pond
             _pondCanvas.ChangeEntityColor(entity.Id, color);
         }
 
-        public async Task Start()
+        public void Start()
         {
             _lastTime = DateTime.Now;
             _tickTimer.Enabled = true;
-            await _pondCanvas.Start().ConfigureAwait(false);
         }
 
-        public async Task Stop()
+        public void Stop()
         {
             _tickTimer.Enabled = false;
-            await _pondCanvas.Stop().ConfigureAwait(false);
         }
         
         private static int RandomColor(float minBrightness = 0.5f)
@@ -112,24 +110,9 @@ namespace PondSharp.Client.Pond
             return color.ToArgb();
         }
 
-        public void InitializeAndCreateEntity(Entity entity, int? x = null, int? y = null)
+        public void InitializeAndCreateEntity(Entity entity, EntityOptions initialization)
         {
-            int xPos;
-            int yPos;
-            if (x == null || y == null)
-            {
-                do
-                {
-                    xPos = Random.Next(_pondEngine.MinX, _pondEngine.MaxX);
-                    yPos = Random.Next(_pondEngine.MinY, _pondEngine.MaxY);
-                } while (_pondEngine.GetEntityAt(xPos, yPos) != null);
-            }
-            else
-            {
-                xPos = x.Value;
-                yPos = y.Value;
-            }
-            _pondEngine.InsertEntity(entity, _nextId++, xPos, yPos, RandomColor());
+            _pondEngine.InsertEntity(entity, initialization);
         }
 
         public void Reset()

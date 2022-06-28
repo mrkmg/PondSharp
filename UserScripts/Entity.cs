@@ -81,6 +81,7 @@ namespace PondSharp.UserScripts
             ApproxY = Y;
             Color = initialization.Color;
             ViewDistance = initialization.ViewDistance;
+            IsBlocking = initialization.IsBlocking;
             
             _intialized = true;
         }
@@ -177,8 +178,24 @@ namespace PondSharp.UserScripts
         /// Destroys the entity, completely removing them from the world.
         /// </summary>
         /// <returns>If the entity was destroyed.</returns>
-        protected bool Destroy() => Engine.DestroyEntity(_id);
-
+        protected bool Destroy() => Engine.DestroyEntity(this);
+        
+        
+        /// <summary>
+        /// Creates a new entity of type T with the specified parameters.
+        /// </summary>
+        /// <param name="options">Options for the entity. Default <see cref="EntityOptions.Default">EntityOptions.Default</see></param>
+        /// <returns>The entity T or null</returns>
+        protected T CreateEntity<T>(EntityOptions options = null) where T : Entity
+            => CanCreateEntity<T>() ? Engine.CreateEntity<T>(options ?? EntityOptions.Default) : null;
+        
+        /// <summary>
+        /// Tests to see if an entity can be created.
+        /// </summary>
+        /// <typeparam name="T">The type of entity to be created.</typeparam>
+        protected bool CanCreateEntity<T>()
+            => Engine.CanCreateEntity<T>(this);
+        
         /// <summary>
         /// Entities which are within the ViewDistance
         /// </summary>

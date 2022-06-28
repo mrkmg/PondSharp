@@ -54,6 +54,9 @@ namespace PondSharp.Examples
                 Destroy();
                 return;
             }
+
+            if (Random.Next(StartAge * 5) == 0)
+                CreateEntity<SelfExpiring>(new EntityOptions {X = X, Y = Y});
             
             ChangeColor(Colors[_age]);
             _age++;

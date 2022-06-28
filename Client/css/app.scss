@@ -1,8 +1,18 @@
-﻿$bootstrap-icons-font-src: 
-    url("~bootstrap-icons/font/fonts/bootstrap-icons.woff2") format("woff2"),
-    url("~bootstrap-icons/font/fonts/bootstrap-icons.woff") format("woff") !important;
+﻿//$bootstrap-icons-font-src: 
+//    url("~bootstrap-icons/font/fonts/bootstrap-icons.woff2") format("woff2"),
+//    url("~bootstrap-icons/font/fonts/bootstrap-icons.woff") format("woff") !important;
 
-@import '~bootstrap/scss/bootstrap';
+$jumbotron-bg: #232323;
+$btn-padding-x: 0.75rem;
+$btn-padding-y: 0.5rem;
+$input-btn-padding-x: 0.75rem;
+$input-btn-padding-y: 0.5rem;
+$input-padding-x: 0.75rem;
+$input-padding-y: 0.5rem;
+
+@import "~bootswatch/dist/slate/variables";
+@import "~bootstrap/scss/bootstrap";
+@import "~bootswatch/dist/slate/bootswatch";
 @import '~bootstrap-icons/font/bootstrap-icons.scss';
 @import 'blazor.scss';
 

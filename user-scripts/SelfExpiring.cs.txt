@@ -30,6 +30,9 @@ namespace PondSharp.Examples
         [PondAdjustable(Min = 0, Max = 1, Step = 0.05)]
         private static double Ratio { get; set; } = 0.8;
         
+        [PondAdjustable(Min = 1, Max = 10, Step = 0.2)]
+        private static double RespawnRatio { get; set; } = 5;
+        
         private int _remainingLife;
         private int _age;
         
@@ -55,7 +58,7 @@ namespace PondSharp.Examples
                 return;
             }
 
-            if (Random.Next(StartAge * 5) == 0)
+            if (Random.NextDouble() * StartAge * RespawnRatio < 1)
                 CreateEntity<SelfExpiring>(new EntityOptions {X = X, Y = Y});
             
             ChangeColor(Colors[_age]);

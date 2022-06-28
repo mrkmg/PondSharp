@@ -31,7 +31,7 @@ namespace PondSharp.Examples
         private static double Ratio { get; set; } = 0.8;
         
         [PondAdjustable(Min = 1, Max = 10, Step = 0.2)]
-        private static double RespawnRatio { get; set; } = 5;
+        private static double RespawnRatio { get; set; } = 2.2;
         
         private int _remainingLife;
         private int _age;

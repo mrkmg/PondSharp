@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Threading.Tasks;
 using System.Timers;
+using PondSharp.Client.Shared;
 using PondSharp.UserScripts;
 
 namespace PondSharp.Client.Pond

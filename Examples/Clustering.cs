@@ -12,18 +12,17 @@ namespace PondSharp.Examples
     /// to dense, or it's too close to
     /// another entity.
     /// </summary>
-    [PondDefaults(InitialCount = 2)]
     public class Clustering : BaseEntity
     {
-        private const int WanderingColor = 0xFFFFFF;  // White
-        private const int JoiningColor = 0x5555FF;    // Blue
-        private const int SeparatingColor = 0xFFFF55; // Yellow
+        private const int WanderingColor = 0xAAAA00;
+        private const int JoiningColor = 0x00AA00; 
+        private const int SeparatingColor = 0xAA0000;
 
         [PondAdjustable(Min = 2, Max = 30, Name = "Group Radius")]
-        private static int GroupRadius { get; set; } = 5;
+        private static int GroupRadius { get; set; } = 3;
         
         [PondAdjustable(Min = 2, Max = 30, Name = "View Radius")]
-        private static int ViewRadius { get; set; } = 10;
+        private static int ViewRadius { get; set; } = 15;
         
         [PondAdjustable(Min = 2, Max = 50, Name = "Group Count")]
         private static int GroupCount { get; set; } = 9;
@@ -47,89 +46,138 @@ namespace PondSharp.Examples
         {
             if (ViewDistance != ViewRadius)
                 ChangeViewDistance(ViewRadius);
-            
-            SetDirection();
+
+            if (Random.Next(200) == 0)
+                DoWander();
+            else
+                SetDirection();
+
 
             if (_hasTarget)
             {
                 MoveTowardsTarget();
-                return;
+
+                if (TargetX == X && TargetY == Y)
+                {
+                    _hasTarget = false;
+                }
             }
             
-            if (MoveTo(X + ForceX, Y + ForceY))
+            if((ForceX == 0 && ForceY == 0) || MoveTo(X + ForceX, Y + ForceY))
                 return;
             
-            // if stuck
             ChooseRandomDirection();
-            _thinkCooldown = 10;
         }
 
         private void SetDirection()
         {
-
-
-            var visibleEntities = VisibleEntities.ToList();
-            var totalInView = visibleEntities.Count();
-            
-            if (totalInView == 0 || Random.Next(100) == 0) 
-            {
-                GroupColor = null;
-                _hasTarget = false;
-                ChangeColor(WanderingColor);
-                ChooseRandomDirection();
-                _thinkCooldown = RndThinkDelay(200, 4, 100);
-                return;
-            }
-            
             if (--_thinkCooldown > 0)
                 return;
             
             GroupColor = null;
             _hasTarget = false;
+            ForceX = 0;
+            ForceY = 0;
             
-            var groupEntities = visibleEntities.Where(e => EntityDist(this, e) < GroupRadius).ToList();
-            var totalInGroup = groupEntities.Count;
-
-            var inViewCenterX = visibleEntities.Sum(e => e.X) / totalInView;
-            var inViewCenterY = visibleEntities.Sum(e => e.Y) / totalInView;
+            var totalInView = 0;
+            var totalInGroup = 0;
+            var inViewCenterX = 0;
+            var inViewCenterY = 0;
+            var groupCenterX = 0;
+            var groupCenterY = 0;
+            int? groupColor = null;
             
-            var groupCenterX = totalInGroup == 0 ? inViewCenterX : groupEntities.Sum(e => e.X) / totalInGroup;
-            var groupCenterY = totalInGroup == 0 ? inViewCenterY : groupEntities.Sum(e => e.Y) / totalInGroup;
+            foreach (var entity in VisibleEntities)
+            {
+                if (!(entity is Clustering e)) continue;
+                
+                totalInView++;
+                inViewCenterX += e.X;
+                inViewCenterY += e.Y;
+                
+                if (EntityDist(this, e) >= GroupRadius) continue;
+                
+                totalInGroup++;
+                groupCenterX += e.X;
+                groupCenterY += e.Y;
+                
+                if (groupColor == null && e.GroupColor != null)
+                    groupColor = e.GroupColor;
+            }
+            
+            if (totalInView == 0)
+            {
+                DoWander();
+                return;
+            }
+            
+            inViewCenterX /= totalInView;
+            inViewCenterY /= totalInView;
+            if (totalInGroup > 0)
+            {
+                groupCenterX /= totalInGroup;
+                groupCenterY /= totalInGroup;
+            }
             var groupCenterDist = Dist(X, Y, groupCenterX, groupCenterY);
 
             if (totalInView > GroupCount)
             {
-                ChangeColor(SeparatingColor);
-                // Move away from group center
-                // _hasTarget = true;
-                (ForceX, ForceY) = GetForceDirection(X - inViewCenterX, Y - inViewCenterY);
-                _thinkCooldown = RndThinkDelay(100, 1);
+                DoLeaveGroup(inViewCenterX, inViewCenterY);
                 return;
             }
             
             if (groupCenterDist <= GroupRadius)
             {
-                var entity = (Clustering)groupEntities.FirstOrDefault(e => e is Clustering { GroupColor: {} });
-                GroupColor = entity?.GroupColor ?? RandomColor();
-                ChangeColor(GroupColor.Value);
-                (ForceX, ForceY) = (0, 0);
-                _hasTarget = true;
-                SetMoveTowards(inViewCenterX, inViewCenterY);
-                _thinkCooldown = RndThinkDelay(100);
+                DoGroupJoin(groupColor, inViewCenterX, inViewCenterY);
                 return;
             }
             
+            DoViewJoin(inViewCenterX, inViewCenterY);
+        }
+
+        private void DoLeaveGroup(int inViewCenterX, int inViewCenterY)
+        {
+            ChangeColor(SeparatingColor);
+            // Move away from group center
+            (ForceX, ForceY) = GetForceDirection(X - inViewCenterX, Y - inViewCenterY);
+            _thinkCooldown = RndThinkDelay(100, 1);
+        }
+
+        private void DoGroupJoin(int? groupColor, int inViewCenterX, int inViewCenterY)
+        {
+            GroupColor = groupColor ?? RandomColor();
+            ChangeColor(GroupColor.Value);
+            (ForceX, ForceY) = (0, 0);
+            _hasTarget = true;
+            SetMoveTowards(inViewCenterX, inViewCenterY);
+            _thinkCooldown = RndThinkDelay(100);
+        }
+
+        private void DoViewJoin(int inViewCenterX, int inViewCenterY)
+        {
             ChangeColor(JoiningColor);
             // Move toward group center
-            (ForceX, ForceY) = GetForceDirection(inViewCenterX - X, inViewCenterY - Y);
+            (ForceX, ForceY) = (0, 0);
+            _hasTarget = true;
+            SetMoveTowards(inViewCenterX, inViewCenterY);
             _thinkCooldown = RndThinkDelay(10);
+        }
+
+        private void DoWander()
+        {
+            _hasTarget = false;
+            ChangeColor(WanderingColor);
+            ChooseRandomDirection();
+            Console.WriteLine($"WanderForce({ForceX},{ForceY})");
+            if (ForceX == 0 && ForceY == 0) throw new Exception("INVALID FORCE");
+            _thinkCooldown = RndThinkDelay(200, 4, 100);
         }
 
         private int RandomColor()
         {
             System.Drawing.Color color;
             do color = System.Drawing.Color.FromArgb(Random.Next(255), Random.Next(255), Random.Next(255));
-            while (color.GetBrightness() < 0.5);
+            while (color.GetBrightness() < 0.65);
             return color.ToArgb();
         }
     }

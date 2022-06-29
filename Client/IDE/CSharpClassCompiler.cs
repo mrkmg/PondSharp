@@ -87,7 +87,7 @@ namespace PondSharp.Client.IDE
                 trees,
                 _references,
                 // must use concurrentBuild:false in blazor due to threading limitations
-                new(OutputKind.DynamicallyLinkedLibrary, concurrentBuild: false) 
+                new(OutputKind.DynamicallyLinkedLibrary, concurrentBuild: false, optimizationLevel: OptimizationLevel.Release) 
             );
             await using var ms = new MemoryStream();
             var result = compilation.Emit(ms);

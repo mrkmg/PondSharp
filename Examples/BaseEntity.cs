@@ -14,8 +14,11 @@ namespace PondSharp.Examples
         
         protected void ChooseRandomDirection()
         {
-            ForceX = Random.Next(-1, 2);
-            ForceY = Random.Next(-1, 2);
+            do
+            {
+                ForceX = Random.Next(-1, 2);
+                ForceY = Random.Next(-1, 2);
+            } while (ForceX == 0 && ForceY == 0);
         }
 
         protected static (int, int) GetForceDirection(int x, int y)

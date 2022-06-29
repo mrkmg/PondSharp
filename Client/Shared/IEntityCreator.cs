@@ -1,6 +1,6 @@
 using PondSharp.UserScripts;
 
-namespace PondSharp.Client;
+namespace PondSharp.Client.Shared;
 
 public interface IEntityCreator
 {

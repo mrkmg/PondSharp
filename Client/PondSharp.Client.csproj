@@ -31,16 +31,16 @@
 
   <ItemGroup>
     <ExampleFiles Include="$(ProjectDir)..\Examples\*.cs" />
-    <WebpackFiles Include="$(ProjectDir)**\*.ts;$(ProjectDir)**\*.scss" />
+    <WebpackFiles Include="$(ProjectDir)**\*.ts;$(ProjectDir)**\*.scss;$(ProjectDir)index.html" />
     <CompiledWebpackFiles Include="$(OutDir)wwwroot\assets\**.*;$(OutDir)wwwroot\index.html" />
     <NodePackageSource Include="$(ProjectDir)package.json;$(ProjectDir)package-lock.json" />
-    <NodeModules Include="$(ProjectDir)node_modules" />
-    <SampleProjectExampleFiles Include="$(ProjectDir)\SampleProject\PondSharp.Examples\**\*.cs" />
+<!--    <NodeModules Include="$(ProjectDir)node_modules\**\*" />-->
+    <SampleProjectAllFiles Include="$(ProjectDir)SampleProject\**\*.*" />
+    <SampleProjectExampleFiles Include="$(ProjectDir)\SampleProject\PondSharp.Examples\**\*.cs;$(ProjectDir)\SampleProject\PondSharp.Examples\**\*.dll;$(ProjectDir)\SampleProject\PondSharp.Examples\**\*.xml" />
   </ItemGroup>
   
   <ItemGroup>
     <Content Include="favicon.ico" />
-    <Content Include="index.html" />
     <None Remove="SampleProject\**" />
     <Compile Remove="SampleProject\**" />
     <EmbeddedResource Remove="SampleProject\**" />
@@ -58,20 +58,24 @@
     <Copy SourceFiles="@(ExampleFiles)" DestinationFiles="@(ExampleFiles->'$(ProjectDir)\SampleProject\PondSharp.Examples\%(RecursiveDir)%(Filename)%(Extension)')" />
   </Target>
 
-  <Target Name="MakeSampleZip" AfterTargets="CopyExampleScriptsToSampleProject" Inputs="$(ProjectDir)..\UserScripts\bin\$(Configuration)\netstandard2.1\PondSharp.UserScripts.dll;$(ProjectDir)..\UserScripts\bin\$(Configuration)\PondSharp.UserScripts.xml;$(ProjectDir)SampleProject\**\*.*" Outputs="$(ProjectDir)wwwroot\sample-project.zip">
+  <Target Name="CopyUserScriptsDll" BeforeTargets="MakeSampleZip" Inputs="$(ProjectDir)..\UserScripts\bin\$(Configuration)\netstandard2.1\PondSharp.UserScripts.dll;$(ProjectDir)..\UserScripts\bin\$(Configuration)\PondSharp.UserScripts.xml" Outputs="$(ProjectDir)SampleProject\PondSharp.Examples\PondSharp.UserScripts.dll;$(ProjectDir)SampleProject\PondSharp.Examples\PondSharp.UserScripts.xml;">
     <Message Text="Copying UserScripts DLL" Importance="high" />
-    <Copy SourceFiles="$(ProjectDir)..\UserScripts\bin\$(Configuration)\netstandard2.1\PondSharp.UserScripts.dll;$(ProjectDir)\..\UserScripts\bin\$(Configuration)\PondSharp.UserScripts.xml" DestinationFolder="SampleProject\PondSharp.Examples" />
+    <Copy SourceFiles="$(ProjectDir)..\UserScripts\bin\$(Configuration)\netstandard2.1\PondSharp.UserScripts.dll;$(ProjectDir)\..\UserScripts\bin\$(Configuration)\PondSharp.UserScripts.xml" DestinationFolder="$(ProjectDir)SampleProject\PondSharp.Examples" />
+  </Target>
+  
+  <Target Name="MakeSampleZip" AfterTargets="CopyExampleScriptsToSampleProject" Inputs="@(SampleProjectAllFiles)" Outputs="$(OutDir)wwwroot\sample-project.zip">
     <Message Text="Creating Sample Project ZIP" Importance="high" />
     <ZipDirectory DestinationFile="$(OutDir)wwwroot\sample-project.zip" SourceDirectory="SampleProject" Overwrite="true" />
   </Target>
 
-  <Target Name="NpmInstall" BeforeTargets="NpmBuild" Inputs="@(NodePackageSource)" Outputs="@(NodeModules)">
+  <Target Name="NpmInstall" BeforeTargets="NpmBuild" Inputs="@(NodePackageSource)" Outputs="$(ProjectDir)\node_modules\.source">
     <Message Text="Installing Node Dependencies (NpmInstall)" Importance="high" />
     <Exec Command="npm ci -q" Condition="$(Configuration) == 'Release'" />
     <Exec Command="npm install -q" Condition="$(Configuration) == 'Debug'" />
+    <Touch Files="$(ProjectDir)\node_modules\.source" AlwaysCreate="true" />
   </Target>
 
-  <Target Name="NpmBuild" AfterTargets="AfterCompile" Inputs="@(WebpackFiles)" Outputs="@(CompiledWebpackFiles)">
+  <Target Name="NpmBuild" AfterTargets="AfterCompile" Inputs="@(WebpackFiles)" Outputs="$(OutDir)wwwroot\index.html">
     <Message Text="Building Client Assets (NpmBuild)" Importance="high" />
     <Exec Command="npm run build:release" Condition="$(Configuration) == 'Release'" />
     <Exec Command="npm run build:debug" Condition="$(Configuration) == 'Debug'" />
@@ -81,6 +85,7 @@
     <Message Text="Cleaning Built Files" />
     <Delete Files="@(CompiledWebpackFiles)" />
     <Delete Files="@(SampleProjectExampleFiles)" />
+    <Delete Files="$(OutDir)wwwroot\sample-project.zip" />
     <RemoveDir Directories="$(ProjectDir)node_modules" />
   </Target>
   

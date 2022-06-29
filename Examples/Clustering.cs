@@ -19,14 +19,17 @@ namespace PondSharp.Examples
         private const int SeparatingColor = 0xAA0000;
 
         [PondAdjustable(Min = 2, Max = 30, Name = "Group Radius")]
-        private static int GroupRadius { get; set; } = 3;
+        private static int GroupRadius { get; set; } = 5;
         
         [PondAdjustable(Min = 2, Max = 30, Name = "View Radius")]
         private static int ViewRadius { get; set; } = 15;
         
-        [PondAdjustable(Min = 2, Max = 50, Name = "Group Count")]
-        private static int GroupCount { get; set; } = 9;
+        [PondAdjustable(Min = 2, Max = 50, Name = "Min Group Count")]
+        private static int MinGroupCount { get; set; } = 9;
 
+        [PondAdjustable(Min = 2, Max = 50, Name = "Max Group Count")]
+        private static int MaxGroupCount { get; set; } = 18;
+        
         public int? GroupColor { get; private set; }
 
         private int _thinkCooldown;
@@ -40,6 +43,7 @@ namespace PondSharp.Examples
             ChangeViewDistance(ViewRadius);
             ChangeColor(WanderingColor);
             ChooseRandomDirection();
+            _thinkCooldown = Random.Next(200);
         }
         
         protected override void Tick()
@@ -47,7 +51,7 @@ namespace PondSharp.Examples
             if (ViewDistance != ViewRadius)
                 ChangeViewDistance(ViewRadius);
 
-            if (Random.Next(200) == 0)
+            if (Random.Next(500) == 0)
                 DoWander();
             else
                 SetDirection();
@@ -120,15 +124,21 @@ namespace PondSharp.Examples
             }
             var groupCenterDist = Dist(X, Y, groupCenterX, groupCenterY);
 
-            if (totalInView > GroupCount)
+            if (totalInView > MaxGroupCount)
             {
                 DoLeaveGroup(inViewCenterX, inViewCenterY);
                 return;
             }
             
-            if (groupCenterDist <= GroupRadius)
+            if (groupCenterDist <= GroupRadius && totalInGroup >= MinGroupCount)
             {
-                DoGroupJoin(groupColor, inViewCenterX, inViewCenterY);
+                DoGroupJoin(groupColor, groupCenterX, groupCenterY);
+                return;
+            }
+            
+            if (groupCenterDist <= GroupRadius && totalInView < MinGroupCount && Random.Next(10) == 0)
+            {
+                DoLeaveGroup(groupCenterX, groupCenterY);
                 return;
             }
             
@@ -140,7 +150,7 @@ namespace PondSharp.Examples
             ChangeColor(SeparatingColor);
             // Move away from group center
             (ForceX, ForceY) = GetForceDirection(X - inViewCenterX, Y - inViewCenterY);
-            _thinkCooldown = RndThinkDelay(100, 1);
+            _thinkCooldown = RndThinkDelay(100, 15, 100);
         }
 
         private void DoGroupJoin(int? groupColor, int inViewCenterX, int inViewCenterY)
@@ -150,7 +160,7 @@ namespace PondSharp.Examples
             (ForceX, ForceY) = (0, 0);
             _hasTarget = true;
             SetMoveTowards(inViewCenterX, inViewCenterY);
-            _thinkCooldown = RndThinkDelay(100);
+            _thinkCooldown = 100 - RndThinkDelay(100);
         }
 
         private void DoViewJoin(int inViewCenterX, int inViewCenterY)
@@ -168,7 +178,6 @@ namespace PondSharp.Examples
             _hasTarget = false;
             ChangeColor(WanderingColor);
             ChooseRandomDirection();
-            Console.WriteLine($"WanderForce({ForceX},{ForceY})");
             if (ForceX == 0 && ForceY == 0) throw new Exception("INVALID FORCE");
             _thinkCooldown = RndThinkDelay(200, 4, 100);
         }

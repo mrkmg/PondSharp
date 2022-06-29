@@ -77,7 +77,7 @@ namespace PondSharp.Client.IDE
             _assembly = null;
             var assemblyName = Path.GetRandomFileName();
             var options = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest);
-            if (sourceTexts.Any(st => st.Value.Contains("new Random(")))
+            if (sourceTexts.Any(st => st.Value.Contains("new Random("))) // this is a not a safe check, it should be improved
                 throw new CompileException(new List<string> {"Random can not be instantiated in user scripts"});
             var trees = sourceTexts.Select(st =>
                 CSharpSyntaxTree.ParseText(st.Value, options, st.Key));
@@ -116,7 +116,7 @@ namespace PondSharp.Client.IDE
 
         public IEnumerable<Type> AvailableInstances(Type targetType)
         {
-            if (_assembly is null) return new Type[0];
+            if (_assembly is null) return Type.EmptyTypes;
 
             return _assembly.GetTypes()
                 .Where(t => t.IsClass)

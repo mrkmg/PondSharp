@@ -11,7 +11,6 @@ namespace PondSharp.Examples
     {
         protected int ForceX;
         protected int ForceY;
-        protected readonly Random Random = new Random();
         
         protected void ChooseRandomDirection()
         {

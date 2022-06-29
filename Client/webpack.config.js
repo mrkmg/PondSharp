@@ -1,10 +1,15 @@
 const path = require('path');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const CopyPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
 module.exports = (env) => {
+    const basePath = path.resolve(__dirname, 'bin/', env.release ? "Release" : "Debug", 'net6.0', 'wwwroot');
+    const assetsPath = path.resolve(basePath, "assets");
+    
     return {
+        stats: 'minimal',
         performance: { hints: false },
         cache: {type: 'filesystem'},
         mode: env.release ? "production" : "development",
@@ -20,6 +25,11 @@ module.exports = (env) => {
                 chunks: ['main', 'vendor', 'monaco', "pixi", 'styles'],
             }),
             new MiniCssExtractPlugin(),
+            new CopyPlugin({
+                patterns: [
+                    { from: "./favicon.ico", to: basePath },
+                ]
+            }),
         ],
         module: {
             rules: [{
@@ -88,7 +98,7 @@ module.exports = (env) => {
         },
         entry: {
             main: {import: './main.ts'},
-            styles: {import: './css/app.scss'},
+            styles: {import: './app.scss'},
             'editor.worker': 'monaco-editor/esm/vs/editor/editor.worker.js',
             'json.worker': 'monaco-editor/esm/vs/language/json/json.worker.js',
             'css.worker': 'monaco-editor/esm/vs/language/css/css.worker.js',
@@ -97,7 +107,7 @@ module.exports = (env) => {
         },
         output: {
             globalObject: 'self',
-            path: path.resolve(__dirname, 'bin/', env.release ? "Release" : "Debug", 'net6.0', 'wwwroot', 'assets'),
+            path: assetsPath,
             publicPath: "./assets/"
         }
     }

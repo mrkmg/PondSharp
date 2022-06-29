@@ -4,38 +4,12 @@
 @import "~bootstrap/scss/bootstrap";
 @import "~bootswatch/dist/cyborg/bootswatch";
 @import '~bootstrap-icons/font/bootstrap-icons.scss';
-@import 'blazor.scss';
-
-.editor-files {
-    max-width: calc(100vw - 30px);
-    border-radius: .2rem .2rem 0 0;
-    overflow-x: auto;
-}
-
-.editor-prompt {
-    .btn, .form-control, .input-group-prepend, .input-group-append {
-        border-radius: 0 !important;
-    }
-}
-
-.ide-file-toolbar.btn-group {
-    .filename {
-        border-radius: $border-radius 0 0 $border-radius !important;
-    }
-    .actions.btn-group-vertical .btn {
-        border-radius: 0 !important;
-        &:first-child {
-            border-top-right-radius: $btn-border-radius !important;
-        }
-        &:last-child {
-            border-bottom-right-radius: $btn-border-radius !important;
-        }
-    }
-}
+@import 'Shared/blazor.scss';
+@import 'IDE/ide-element';
 
 .btn-icon {
     padding: 2px !important;
-    font-size: 8px !important;
+    font-size: 6px !important;
 }
 
 .main-subheading {

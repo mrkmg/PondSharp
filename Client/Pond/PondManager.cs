@@ -28,7 +28,7 @@ namespace PondSharp.Client.Pond
 
         public PondManager([NotNull] PondEngine engine, [NotNull] PondCanvas canvas, [NotNull] IEntityCreator entityCreator)
         {
-            _tickTimer = new(16); //60tps 
+            _tickTimer = new(1000.0/60.0); //60tps 
             _tickTimer.Elapsed += (_, _) => Tick();
             
             _pondCanvas = canvas;
@@ -53,7 +53,7 @@ namespace PondSharp.Client.Pond
         {
             var diff = DateTime.Now.Subtract(_lastTime).TotalMilliseconds;
             _lastTime = DateTime.Now;
-            CurrentTickTime = diff * 0.99 + CurrentTickTime * 0.01;
+            CurrentTickTime = diff * 0.95 + CurrentTickTime * 0.05;
             try
             {
                 _pondEngine.Tick();

@@ -24,7 +24,6 @@ namespace PondSharp.Examples
     [PondDefaults(InitialCount = 500, NewCount = 100)]
     public class Stated : Entity
     {
-        private static readonly Random Random = new Random();
         private int _destinationX;
         private int _destinationY;
         private int _stuckCounter;

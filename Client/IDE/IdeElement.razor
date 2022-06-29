@@ -11,57 +11,67 @@
 @inject HttpClient Http
 @implements IEntityCreator
 
-<div class="editor-files">
-    <div class="btn-group ide-file-toolbar">
-        @foreach (var name in SourceNames)
-        {
-            <button class="btn filename @(_selectedSource == name ? "btn-primary" : "btn-secondary")" @onclick="_ => SelectSource(name)">
-                @name
-            </button>
-            <div class="mr-1 btn-group-vertical actions">
-                <button class="btn btn-icon @(_selectedSource == name ? "btn-primary" : "btn-secondary")" @onclick="_ => RenameScript(name)">
-                    <i class="bi bi-wrench" title="Rename"></i>
-                </button>
-                <button class="btn btn-icon @(_selectedSource == name ? "btn-primary" : "btn-secondary")" @onclick="_ => DeleteScript(name)">
-                    <i class="bi bi-x-circle" title="Delete"></i>
-                </button>
-            </div>
-        }
+<div class="ide-element">
+    <div class="editor-files">
+        <div class="ide-file-toolbar">
+            @foreach (var name in SourceNames)
+            {
+                <div class="btn-group btn-group-sm mb-2">
+                    <button class="btn filename @(_selectedSource == name ? "btn-primary" : "btn-secondary")" @onclick="_ => SelectSource(name)">
+                        @name
+                    </button>
+                    <div class="mr-1 btn-group-vertical actions">
+                        <button class="btn btn-icon @(_selectedSource == name ? "btn-primary" : "btn-secondary")" @onclick="_ => RenameScript(name)">
+                            <i class="bi bi-wrench" title="Rename"></i>
+                        </button>
+                        <button class="btn btn-icon @(_selectedSource == name ? "btn-primary" : "btn-secondary")" @onclick="_ => DeleteScript(name)">
+                            <i class="bi bi-x-circle" title="Delete"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+            
+            <button class="btn btn-sm btn-success mb-2" @onclick="NewSource">+</button>
+        </div>
     </div>
-    <button class="btn btn-success" @onclick="NewSource">+</button>
+    @if(_editorPromptType != EditorPromptType.None)
+    {
+        <div class="editor-prompt mb-2">
+            @if (_editorPromptType == EditorPromptType.Delete)
+            {
+                <div class="input-group input-group-sm">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text text-light bg-dark">Delete: @(FullEditorPromptName)</span>
+                    </div>
+                    <div class="input-group-append">
+                        <button class="btn btn-danger" @onclick="SaveEditorPrompt">Confirm</button>
+                        <button class="btn btn-warning" @onclick="CancelEditorPrompt">Cancel</button>
+                    </div>
+                </div>
+            }
+            @if (_editorPromptType == EditorPromptType.Add || _editorPromptType == EditorPromptType.Rename)
+            {
+                <div class="input-group input-group-sm" style="max-width: 400px">
+                    <!-- The onkeyup event is used to trigger a "change" event on every keystroke. -->
+                    <input class="form-control" @bind="_editorPromptName" onkeyup="const e=document.createEvent('HTMLEvents'); e.initEvent('change', false, true);this.dispatchEvent(e)"/>
+                    <div class="input-group-append">
+                        <span class="input-group-text">.cs</span>
+                    </div>
+                    <div class="input-group-append">
+                        <button class="btn btn-success" @onclick="SaveEditorPrompt" disabled="@(_editorPromptName == _renameScriptOriginalName)">Save</button>
+                        <button class="btn btn-warning" @onclick="CancelEditorPrompt">Cancel</button>
+                    </div>
+                </div>
+            }
+            @if (_editorPromptError != string.Empty)
+            {
+                <div class="alert alert-warning">@_editorPromptError</div>
+            }
+        </div>
+    }
+    <div id="code-editor" class="w-auto" style="min-height: 500px; height: calc(100vh - 250px)"></div>
+    <div>PondSharp.UserScripts Version: <span>@UserScriptsVersion</span></div>
 </div>
-@if(_editorPromptType != EditorPromptType.None)
-{
-    <div class="editor-prompt">
-        @if (_editorPromptType == EditorPromptType.Delete)
-        {
-            <div class="btn-group">
-                <button class="btn btn-danger" @onclick="SaveEditorPrompt">Confirm</button>
-                <button class="btn btn-warning" @onclick="CancelEditorPrompt">Cancel</button>
-            </div>
-        }
-        @if (_editorPromptType == EditorPromptType.Add || _editorPromptType == EditorPromptType.Rename)
-        {
-            <div class="input-group" style="max-width: 400px">
-                <!-- The onkeyup event is used to trigger a "change" event on every keystroke. -->
-                <input class="form-control" @bind="_editorPromptName" onkeyup="const e=document.createEvent('HTMLEvents'); e.initEvent('change', false, true);this.dispatchEvent(e)"/>
-                <div class="input-group-append">
-                    <span class="input-group-text">.cs</span>
-                </div>
-                <div class="input-group-append">
-                    <button class="btn btn-success" @onclick="SaveEditorPrompt" disabled="@(_editorPromptName == _renameScriptOriginalName)">Save</button>
-                    <button class="btn btn-warning" @onclick="CancelEditorPrompt">Cancel</button>
-                </div>
-            </div>
-        }
-        @if (_editorPromptError != string.Empty)
-        {
-            <div class="alert alert-warning">@_editorPromptError</div>
-        }
-    </div>
-}
-<div id="code-editor" class="w-auto" style="min-height: 500px; height: calc(100vh - 250px)"></div>
-<div>PondSharp.UserScripts Version: <span>@UserScriptsVersion</span></div>
 
 @code {
     private CSharpClassCompiler _compiler;

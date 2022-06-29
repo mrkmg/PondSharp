@@ -1,6 +1,6 @@
 // import "./css/app.scss";
 import {PondRenderer} from "./Pond/pond-renderer";
-import {CodeEditor} from "./IDE/code-editor";
+import {CodeEditor} from "./IDE/ide-element";
 
 /// Defined by webpack.config.js
 declare var self: any;

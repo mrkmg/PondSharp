@@ -6,7 +6,8 @@ export class PondRenderer {
     private pondRef: any;
     private element: HTMLDivElement;
     private application: PIXI.Application;
-    private entities: Record<number, PIXI.Container> = {};
+    // private entities: Record<number, PIXI.Container> = {};
+    private entities = new Map<number, PIXI.Container>();
     private entityHolder: PIXI.Container;
     private fps: PIXI.Text;
     private cursor: PIXI.Graphics;
@@ -128,27 +129,26 @@ export class PondRenderer {
         graphic.endFill();
         graphic.position.x = x * this.gridSize;
         graphic.position.y = y * this.gridSize;
-        this.entities[id] = graphic;
+        this.entities.set(id, graphic);
         this.entityHolder.addChild(graphic);
     }
     
     destroyEntity(id: number) {
-        if (!this.entities[id]) return;
-        this.entities[id].destroy();
-        this.entities[id] = null;
-        delete this.entities[id];
+        if (!this.entities.has(id)) return;
+        this.entities.get(id).destroy();
+        this.entities.delete(id);
     }
     
     moveEntity(id: number, x: number, y: number) {
-        if (!this.entities[id]) return;
-        const container = this.entities[id];
+        if (!this.entities.has(id)) return;
+        const container = this.entities.get(id);
         container.position.x = x * this.gridSize;
         container.position.y = y * this.gridSize;
     }
     
     changeEntityColor(id: number, color: number) {
-        if (!this.entities[id]) return;
-        const graphic = this.entities[id] as PIXI.Graphics;
+        if (!this.entities.has(id)) return;
+        const graphic = this.entities.get(id) as PIXI.Graphics;
         graphic.clear();
         graphic.beginFill(color);
         graphic.drawCircle(this.gridSize/2, this.gridSize/2, this.gridSize/2);
@@ -160,7 +160,7 @@ export class PondRenderer {
         let i;
         for (i = 0; i < length; i++) {
             const {entryPtr, id, type} = readEntityChangeHeader(pointer, i);
-            if (!this.entities[id]) continue;
+            if (!this.entities.has(id)) continue;
             switch (type) {
                 case EntityChangeType.Move:
                     const {x,y} = readEntityMoveData(entryPtr);

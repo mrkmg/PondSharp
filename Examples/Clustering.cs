@@ -12,37 +12,52 @@ namespace PondSharp.Examples
     /// to dense, or it's too close to
     /// another entity.
     /// </summary>
-    [PondDefaults(NewCount = 100)]
+    [PondDefaults(InitialCount = 2)]
     public class Clustering : BaseEntity
     {
         private const int WanderingColor = 0xFFFFFF;  // White
         private const int JoiningColor = 0x5555FF;    // Blue
         private const int SeparatingColor = 0xFFFF55; // Yellow
-        private const int RestingColor = 0x55FF55;    // Green
 
         [PondAdjustable(Min = 2, Max = 30, Name = "Group Radius")]
-        private static int GroupSize { get; set; } = 5;
+        private static int GroupRadius { get; set; } = 5;
+        
+        [PondAdjustable(Min = 2, Max = 30, Name = "View Radius")]
+        private static int ViewRadius { get; set; } = 10;
         
         [PondAdjustable(Min = 2, Max = 50, Name = "Group Count")]
-        private static int GroupCount { get; set; } = 20;
+        private static int GroupCount { get; set; } = 9;
+
+        public int? GroupColor { get; private set; }
 
         private int _thinkCooldown;
+        private bool _hasTarget;
 
         private int RndThinkDelay(int max, int curve = 4, int divisors = 20) =>
             (int) (Math.Pow(Random.Next(divisors) + 1, curve) / Math.Pow(divisors, curve) * max); 
         
         protected override void OnCreated()
         {
-            ChangeViewDistance(15);
+            ChangeViewDistance(ViewRadius);
             ChangeColor(WanderingColor);
             ChooseRandomDirection();
         }
         
         protected override void Tick()
         {
-            SetDirection();
+            if (ViewDistance != ViewRadius)
+                ChangeViewDistance(ViewRadius);
             
-            if (MoveTo(X + ForceX, Y + ForceY)) return;
+            SetDirection();
+
+            if (_hasTarget)
+            {
+                MoveTowardsTarget();
+                return;
+            }
+            
+            if (MoveTo(X + ForceX, Y + ForceY))
+                return;
             
             // if stuck
             ChooseRandomDirection();
@@ -51,56 +66,71 @@ namespace PondSharp.Examples
 
         private void SetDirection()
         {
-            if (_thinkCooldown > 1)
-            {
-                _thinkCooldown--;
-                return;
-            }
 
-            var entities = VisibleEntities.ToList();
-            //if (CheckFlee(entities)) return;
-                
-            ChooseForceDirections(entities);
 
-            if (Random.Next(100) != 0) return;
+            var visibleEntities = VisibleEntities.ToList();
+            var totalInView = visibleEntities.Count();
             
-            ChangeColor(WanderingColor);
-            ChooseRandomDirection();
-            _thinkCooldown = RndThinkDelay(200, 2, 100);
-        }
-
-        private void ChooseForceDirections(IList<IEntity> entities)
-        {
-            if (entities.Count == 0) 
+            if (totalInView == 0 || Random.Next(100) == 0) 
             {
+                GroupColor = null;
+                _hasTarget = false;
                 ChangeColor(WanderingColor);
+                ChooseRandomDirection();
+                _thinkCooldown = RndThinkDelay(200, 4, 100);
                 return;
             }
-
-            var total = entities.Count;
-            var (groupCenterX, groupCenterY) = entities
-                .Aggregate<IEntity, (int X, int Y)>((0, 0), (a, e) => (a.X + e.X/total, a.Y + e.Y/total));
-            var distanceToCenter = Dist(X, Y, groupCenterX, groupCenterY);
             
-            if (entities.Count > GroupCount)
+            if (--_thinkCooldown > 0)
+                return;
+            
+            GroupColor = null;
+            _hasTarget = false;
+            
+            var groupEntities = visibleEntities.Where(e => EntityDist(this, e) < GroupRadius).ToList();
+            var totalInGroup = groupEntities.Count;
+
+            var inViewCenterX = visibleEntities.Sum(e => e.X) / totalInView;
+            var inViewCenterY = visibleEntities.Sum(e => e.Y) / totalInView;
+            
+            var groupCenterX = totalInGroup == 0 ? inViewCenterX : groupEntities.Sum(e => e.X) / totalInGroup;
+            var groupCenterY = totalInGroup == 0 ? inViewCenterY : groupEntities.Sum(e => e.Y) / totalInGroup;
+            var groupCenterDist = Dist(X, Y, groupCenterX, groupCenterY);
+
+            if (totalInView > GroupCount)
             {
                 ChangeColor(SeparatingColor);
                 // Move away from group center
-                (ForceX, ForceY) = GetForceDirection(X - groupCenterX, Y - groupCenterY);
+                // _hasTarget = true;
+                (ForceX, ForceY) = GetForceDirection(X - inViewCenterX, Y - inViewCenterY);
                 _thinkCooldown = RndThinkDelay(100, 1);
-            } else if (distanceToCenter > GroupSize)
-            {
-                ChangeColor(JoiningColor);
-                // Move toward group center
-                (ForceX, ForceY) = GetForceDirection(groupCenterX - X, groupCenterY - Y);
-                _thinkCooldown = RndThinkDelay(10);
+                return;
             }
-            else
+            
+            if (groupCenterDist <= GroupRadius)
             {
-                ChangeColor(RestingColor);
+                var entity = (Clustering)groupEntities.FirstOrDefault(e => e is Clustering { GroupColor: {} });
+                GroupColor = entity?.GroupColor ?? RandomColor();
+                ChangeColor(GroupColor.Value);
                 (ForceX, ForceY) = (0, 0);
-                _thinkCooldown = RndThinkDelay(30);
+                _hasTarget = true;
+                SetMoveTowards(inViewCenterX, inViewCenterY);
+                _thinkCooldown = RndThinkDelay(100);
+                return;
             }
+            
+            ChangeColor(JoiningColor);
+            // Move toward group center
+            (ForceX, ForceY) = GetForceDirection(inViewCenterX - X, inViewCenterY - Y);
+            _thinkCooldown = RndThinkDelay(10);
+        }
+
+        private int RandomColor()
+        {
+            System.Drawing.Color color;
+            do color = System.Drawing.Color.FromArgb(Random.Next(255), Random.Next(255), Random.Next(255));
+            while (color.GetBrightness() < 0.5);
+            return color.ToArgb();
         }
     }
 }

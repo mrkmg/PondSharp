@@ -77,7 +77,8 @@ namespace PondSharp.Client.IDE
             _assembly = null;
             var assemblyName = Path.GetRandomFileName();
             var options = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest);
-            
+            if (sourceTexts.Any(st => st.Value.Contains("new Random(")))
+                throw new CompileException(new List<string> {"Random can not be instantiated in user scripts"});
             var trees = sourceTexts.Select(st =>
                 CSharpSyntaxTree.ParseText(st.Value, options, st.Key));
 

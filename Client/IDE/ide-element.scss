@@ -1,0 +1,38 @@
+
+.ide-element {
+  .editor-files {
+    max-width: calc(100vw - 30px);
+    border-radius: .2rem .2rem 0 0;
+    overflow-x: auto; 
+  }
+
+  .ide-file-toolbar {
+    .filename {
+      border-radius: $border-radius 0 0 $border-radius !important;
+      margin-right: 0;
+      
+      &:focus {
+        box-shadow: none;
+      }
+    }
+    
+    .actions.btn-group-vertical {
+      margin-left: 0;
+      .btn {
+        border-radius: 0 !important;
+
+        &:first-child {
+          border-top-right-radius: $btn-border-radius !important;
+        }
+
+        &:last-child {
+          border-bottom-right-radius: $btn-border-radius !important;
+        }
+
+        &:focus {
+          box-shadow: none;
+        }
+      }
+    }
+  }
+}

@@ -124,7 +124,7 @@
             </div>
             @if (_errors.Count > 0)
             {
-                <div class="bg-warning">
+                <div class="bg-warning text-light">
                     @foreach (var error in _errors)
                     {
                         <div class="border-bottom">@error</div>
@@ -152,7 +152,7 @@
     private AvailableEntityEntry SelectedType
     {
         get => _selectedEntity;
-        set { _selectedEntity = value; _ideElement.SelectedEntity = _selectedEntity.FullName; }
+        set { _selectedEntity = value; _ideElement.SelectedEntity = _selectedEntity?.FullName ?? ""; }
     }
 
     private AvailableEntityEntry[] _availableEntityTypes = Array.Empty<AvailableEntityEntry>();
@@ -178,10 +178,10 @@
 
     private double TickSpeed
     {
-        get => Math.Round(1000/_manager?.TickSpeed ?? 0);
+        get => Math.Round(1000.0/_manager?.TickSpeed ?? 0.0);
         set
         {
-            if (_manager is not null) _manager.TickSpeed = 1000/value;
+            if (_manager is not null) _manager.TickSpeed = 1000.0/value;
         }
     }
 
@@ -320,11 +320,16 @@
         _manager.InitializeAndCreateEntity(_ideElement.CreateInstance<Entity>(fullName), EntityOptions.Default);
     }
 
-    private Task GetExampleScripts() =>
-        _ideElement.GetExampleScripts();
+    private async Task GetExampleScripts()
+    {
+        await _ideElement.GetExampleScripts();
+        await CompileSource();
+    }
 
     private async Task CompileSource()
     {
+        _display = DisplayType.Initializing;
+        await Task.Delay(50);
         Reset();
 
         try
@@ -343,6 +348,7 @@
         }
         catch (CompileException e)
         {
+            _display = DisplayType.Ide;
             _errors = e.Errors.ToList();
             _output = "Compilation Failure";
             StateHasChanged();

@@ -32,32 +32,28 @@
   <ItemGroup>
     <ExampleFiles Include="$(ProjectDir)..\Examples\*.cs" />
     <WebpackFiles Include="$(ProjectDir)**\*.ts;$(ProjectDir)**\*.scss" />
-    <CompiledWebpackFiles Include="$(OutDir)wwwroot\**\**.*;" />
+    <CompiledWebpackFiles Include="$(OutDir)wwwroot\assets\**.*;$(OutDir)wwwroot\index.html" />
     <NodePackageSource Include="$(ProjectDir)package.json;$(ProjectDir)package-lock.json" />
-    <NodeModules Include="$(ProjectDir)node_modules\**\*" />
+    <NodeModules Include="$(ProjectDir)node_modules" />
     <SampleProjectExampleFiles Include="$(ProjectDir)\SampleProject\PondSharp.Examples\**\*.cs" />
-    <WebpackFiles Remove="SampleProject\**" />
   </ItemGroup>
   
   <ItemGroup>
     <Content Include="favicon.ico" />
     <Content Include="index.html" />
-    <None Remove="wwwroot\**" />
     <None Remove="SampleProject\**" />
     <Compile Remove="SampleProject\**" />
-    <Compile Remove="wwwroot\**" />
     <EmbeddedResource Remove="SampleProject\**" />
-    <EmbeddedResource Remove="wwwroot\**" />
     <Content Remove="SampleProject\**" />
   </ItemGroup>
   
-  <Target Name="CopyExampleScriptsToUserScripts" AfterTargets="BuildWebAssets" Inputs="@(ExampleFiles)" Outputs="@(ExampleFiles->'$(OutDir)\wwwroot\user-scripts\%(RecursiveDir)%(Filename)%(Extension).txt')">
+  <Target Name="CopyExampleScriptsToUserScripts" AfterTargets="NpmBuild" Inputs="@(ExampleFiles)" Outputs="@(ExampleFiles->'$(OutDir)\wwwroot\user-scripts\%(RecursiveDir)%(Filename)%(Extension).txt')">
     <Message Text="Copying Example Files To User Scripts" Importance="high" />
     <MakeDir Directories="$(OutDir)wwwroot\user-scripts" />
     <Copy SourceFiles="@(ExampleFiles)" DestinationFiles="@(ExampleFiles->'$(OutDir)\wwwroot\user-scripts\%(RecursiveDir)%(Filename)%(Extension).txt')" />
   </Target>
 
-  <Target Name="CopyExampleScriptsToSampleProject" AfterTargets="BuildWebAssets" Inputs="@(ExampleFiles)" Outputs="@(ExampleFiles->'$(ProjectDir)\SampleProject\PondSharp.Examples\%(RecursiveDir)%(Filename)%(Extension)')">
+  <Target Name="CopyExampleScriptsToSampleProject" AfterTargets="NpmBuild" Inputs="@(ExampleFiles)" Outputs="@(ExampleFiles->'$(ProjectDir)\SampleProject\PondSharp.Examples\%(RecursiveDir)%(Filename)%(Extension)')">
     <Message Text="Copying Example Files To Sample Project" Importance="high" />
     <Copy SourceFiles="@(ExampleFiles)" DestinationFiles="@(ExampleFiles->'$(ProjectDir)\SampleProject\PondSharp.Examples\%(RecursiveDir)%(Filename)%(Extension)')" />
   </Target>
@@ -69,14 +65,14 @@
     <ZipDirectory DestinationFile="$(OutDir)wwwroot\sample-project.zip" SourceDirectory="SampleProject" Overwrite="true" />
   </Target>
 
-  <Target Name="InstallNPMDependencies" BeforeTargets="BuildWebAssets">
-    <Message Text="Installing NPM Dependencies" Importance="high" />
-    <Exec Command="npm ci" Condition="$(Configuration) == 'Release'" />
-    <Exec Command="npm install" Condition="$(Configuration) == 'Debug'" />
+  <Target Name="NpmInstall" BeforeTargets="NpmBuild" Inputs="@(NodePackageSource)" Outputs="@(NodeModules)">
+    <Message Text="Installing Node Dependencies (NpmInstall)" Importance="high" />
+    <Exec Command="npm ci -q" Condition="$(Configuration) == 'Release'" />
+    <Exec Command="npm install -q" Condition="$(Configuration) == 'Debug'" />
   </Target>
 
-  <Target Name="BuildWebAssets" AfterTargets="AfterCompile">
-    <Message Text="Running NPM Build" Importance="high" />
+  <Target Name="NpmBuild" AfterTargets="AfterCompile" Inputs="@(WebpackFiles)" Outputs="@(CompiledWebpackFiles)">
+    <Message Text="Building Client Assets (NpmBuild)" Importance="high" />
     <Exec Command="npm run build:release" Condition="$(Configuration) == 'Release'" />
     <Exec Command="npm run build:debug" Condition="$(Configuration) == 'Debug'" />
   </Target>

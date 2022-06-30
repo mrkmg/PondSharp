@@ -34,7 +34,13 @@
                         <div class="btn-group-vertical mb-3" style="width: 100%">
                             @foreach (var type in _availableEntityTypes)
                             {
-                                <button class="btn btn-outline-primary @(type == SelectedType ? "active" : "")" @onclick="@(() => SelectedType = type)">@type.ShortName</button>
+                                <div class="btn-group">
+                                    <button class="btn btn-outline-primary @(type == SelectedType ? "active" : "")" @onclick="@(() => SelectedType = type)">@type.ShortName</button>
+                                    <div class="btn-group-vertical">
+                                        <button @onclick="_ => CreateEntityDefault(type)" class="btn btn-icon btn-outline-primary">S</button>
+                                        <button @onclick="_ => RemoveAllEntityOf(type)" class="btn btn-icon btn-outline-primary">C</button>
+                                    </div>
+                                </div>
                             }
                         </div>
                     }
@@ -279,6 +285,20 @@
         foreach (var availableEntity in _availableEntityTypes)
         {
             _countToCreate.Add(availableEntity.FullName, availableEntity.UserSpawnable.NewCount);
+        }
+    }
+
+    private void CreateEntityDefault(AvailableEntityEntry entry)
+    {
+        if (entry.UserSpawnable.NewCount > 0)
+            CreateEntity(entry.FullName, entry.UserSpawnable.NewCount);
+    }
+
+    private void RemoveAllEntityOf(AvailableEntityEntry entry)
+    {
+        foreach (var entity in _engine.Entities.Where(e => e.GetType() == entry.Type))
+        {
+            _engine.DestroyEntity(entity);
         }
     }
 

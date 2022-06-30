@@ -22,6 +22,9 @@ namespace PondSharp.UserScripts
         
         private Engine Engine { get; set; }
         
+        /// <summary>
+        /// An instance of Random to use.
+        /// </summary>
         protected static readonly Random Random = new Random();
 
         /// <inheritdoc />

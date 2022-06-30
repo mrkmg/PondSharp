@@ -75,40 +75,30 @@ namespace PondSharp.Examples
             base.Tick();
         }
             
-        private static List<int> Colors = CreateAgeColor();
-
-        private static readonly Color[] TransitionColors =
-        {
-            System.Drawing.Color.FromArgb(100, 0, 1), 
-            System.Drawing.Color.Firebrick, 
-            System.Drawing.Color.Yellow, 
-            System.Drawing.Color.FromArgb(50, 0, 1), 
-            System.Drawing.Color.Black
-        };
-        private static readonly double[] TransitionRatios = { 0, 0.3, 0.6, 0.9 };
         private static List<int> CreateAgeColor()
         {
-            return ColorTransition.From(StartAge, TransitionColors, TransitionRatios)
+            return ColorTransition.From(StartAge, InternalTransitionData.TransitionColors, InternalTransitionData.TransitionRatios)
                 .Colors()
                 .Select(c => c.ToArgb())
                 .ToList();
         }
         
-        private static IEnumerable<Color> GenerateSequence(Color start, Color end, int colorCount)
-        {
-            for (var n = 0; n < colorCount; n++)
-            {
-                var ratio = n / (double)(colorCount - 1);
-                var negativeRatio = 1.0 - ratio;
-                var aComponent = negativeRatio * start.A + ratio * end.A;
-                var rComponent = negativeRatio * start.R + ratio * end.R;
-                var gComponent = negativeRatio * start.G + ratio * end.G;
-                var bComponent = negativeRatio * start.B + ratio * end.B;
-
-                yield return System.Drawing.Color.FromArgb((byte)aComponent, (byte)rComponent, (byte)gComponent, (byte)bComponent);
-            }
-        }
+        private static List<int> Colors = CreateAgeColor();
     }
-    
+
+    internal static class InternalTransitionData
+    {
+
+        internal static readonly Color[] TransitionColors =
+        {
+            Color.FromArgb(100, 0, 1), 
+            Color.Firebrick, 
+            Color.Yellow, 
+            Color.FromArgb(50, 0, 1), 
+            Color.Black
+        };
+        internal static readonly double[] TransitionRatios = { 0, 0.3, 0.6, 0.9 };
+        
+    }
     
 }

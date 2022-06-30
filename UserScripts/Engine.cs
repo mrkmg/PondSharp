@@ -11,15 +11,15 @@ namespace PondSharp.UserScripts
         public int MinY { get; protected set; }
         public int MaxY { get; protected set; }
         
-        public abstract IEnumerable<IEntity> Entities { get; }
-        public abstract IEntity GetEntity(int entityId);
-        public abstract IEntity GetEntityAt(int x, int y);
+        public abstract IEnumerable<Entity> Entities { get; }
+        public abstract Entity GetEntity(int entityId);
+        public abstract Entity GetEntityAt(int x, int y);
         
         public abstract bool DestroyEntity(Entity entity);
-        public abstract bool CanCreateEntity<T>(IEntity entity);
+        public abstract bool CanCreateEntity<T>(Entity entity);
         public abstract T CreateEntity<T>(EntityOptions options) where T : Entity;
 
-        public abstract IEnumerable<IEntity> GetVisibleEntities(IEntity entity);
+        public abstract IEnumerable<Entity> GetVisibleEntities(Entity entity);
 
         protected static void DoTick(Entity e)
         {
@@ -34,19 +34,18 @@ namespace PondSharp.UserScripts
         
         #region Movement
         
-        public virtual bool CanMoveTo(IEntity entity, int x, int y) => true;
+        public virtual bool CanMoveTo(Entity entity, int x, int y) => true;
         public bool MoveTo(int entityId, int x, int y) => MoveTo(GetEntity(entityId), x, y);
-        public virtual bool MoveTo(IEntity entity, int x, int y)
+        public virtual bool MoveTo(Entity entity, int x, int y)
         {
             if (!CanMoveTo(entity, x, y)) return false;
             WriteEntityPosition(entity, x, y);
             return true;
         }
-        protected void WriteEntityPosition(IEntity entity, int x, int y)
+        protected void WriteEntityPosition(Entity entity, int x, int y)
         {
-            if (!(entity is Entity aEntity)) return;
-            aEntity.X = x;
-            aEntity.Y = y;
+            entity.X = x;
+            entity.Y = y;
             OnEntityMoved(entity);
         }
         
@@ -54,15 +53,15 @@ namespace PondSharp.UserScripts
 
         #region Color
 
-        public virtual bool CanChangeColorTo(IEntity entity, int color) => true;
+        public virtual bool CanChangeColorTo(Entity entity, int color) => true;
         public bool ChangeColorTo(int entityId, int color) => ChangeColorTo(GetEntity(entityId), color);
-        public virtual bool ChangeColorTo(IEntity entity, int color)
+        public virtual bool ChangeColorTo(Entity entity, int color)
         {
             if (!CanChangeColorTo(entity, color)) return false;
             WriteEntityColor(entity, color);
             return true;
         }
-        protected void WriteEntityColor(IEntity entity, int color)
+        protected void WriteEntityColor(Entity entity, int color)
         {
             if (!(entity is Entity aEntity)) return;
             aEntity.Color = color;
@@ -73,15 +72,15 @@ namespace PondSharp.UserScripts
 
         #region ViewDistance
         
-        public virtual bool CanChangeViewDistance(IEntity entity, int distance) => true;
+        public virtual bool CanChangeViewDistance(Entity entity, int distance) => true;
         public bool ChangeViewDistance(int entityId, int distance) => ChangeViewDistance(GetEntity(entityId), distance);
-        public bool ChangeViewDistance(IEntity entity, int distance)
+        public bool ChangeViewDistance(Entity entity, int distance)
         {
             if (!CanChangeViewDistance(entity, distance)) return false;
             WriteEntityViewDistance(entity, distance);
             return true;
         }
-        private void WriteEntityViewDistance(IEntity entity, int distance)
+        private void WriteEntityViewDistance(Entity entity, int distance)
         {
             if (!(entity is Entity aEntity)) return;
             aEntity.ViewDistance = distance;
@@ -92,15 +91,15 @@ namespace PondSharp.UserScripts
         
         #region IsBlocking
         
-        public virtual bool CanChangeIsBlocking(IEntity entity) => false;
+        public virtual bool CanChangeIsBlocking(Entity entity) => false;
         public bool ChangeIsBlocking(int entityId, bool isBlocking) => ChangeIsBlocking(GetEntity(entityId), isBlocking);
-        public bool ChangeIsBlocking(IEntity entity, bool isBlocking)
+        public bool ChangeIsBlocking(Entity entity, bool isBlocking)
         {
             if (!CanChangeIsBlocking(entity)) return false;
             WriteEntityIsBlocking(entity, isBlocking);
             return true;
         }
-        private void WriteEntityIsBlocking(IEntity entity, bool isBlocking)
+        private void WriteEntityIsBlocking(Entity entity, bool isBlocking)
         {
             if (!(entity is Entity aEntity)) return;
             aEntity.IsBlocking = isBlocking;
@@ -112,32 +111,32 @@ namespace PondSharp.UserScripts
         #region Events
 
         public event EventHandler<(int, int)> EntityMoved;
-        public event EventHandler<IEntity> EntityAdded;
-        public event EventHandler<IEntity> EntityRemoved;
+        public event EventHandler<Entity> EntityAdded;
+        public event EventHandler<Entity> EntityRemoved;
         public event EventHandler<int> EntityColorChanged;
         public event EventHandler<int> EntityViewDistanceChanged;
 
-        protected void OnEntityAdded(IEntity entity)
+        protected void OnEntityAdded(Entity entity)
         {
             EntityAdded?.Invoke(this, entity);
         }
 
-        protected void OnEntityRemoved(IEntity entity)
+        protected void OnEntityRemoved(Entity entity)
         {
             EntityRemoved?.Invoke(this, entity);
         }
 
-        protected void OnEntityMoved(IEntity entity)
+        protected void OnEntityMoved(Entity entity)
         {
             EntityMoved?.Invoke(entity, (entity.X, entity.Y));
         }
 
-        protected void OnEntityColorChanged(IEntity entity)
+        protected void OnEntityColorChanged(Entity entity)
         {
             EntityColorChanged?.Invoke(entity, entity.Color);
         }
 
-        protected void OnEntityViewDistanceChanged(IEntity entity)
+        protected void OnEntityViewDistanceChanged(Entity entity)
         {
             EntityViewDistanceChanged?.Invoke(entity, entity.ViewDistance);
         }

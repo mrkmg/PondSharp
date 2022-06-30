@@ -24,9 +24,9 @@ namespace PondSharp.Client.Pond
         private readonly List<Entity> _entitiesToAdd = new();
         private readonly Random _random = new();
         
-        public override IEnumerable<IEntity> Entities => _entities;
-        public override IEntity GetEntity(int entityId) => _entitiesById[entityId];
-        public override IEntity GetEntityAt(int x, int y) => _entityLayer.GetAt(x, y);
+        public override IEnumerable<Entity> Entities => _entities;
+        public override Entity GetEntity(int entityId) => _entitiesById[entityId];
+        public override Entity GetEntityAt(int x, int y) => _entityLayer.GetAt(x, y);
         public int TotalEntities => _entities.Count;
         
         private static int Dist(int x1, int y1, int x2, int y2) =>
@@ -41,7 +41,7 @@ namespace PondSharp.Client.Pond
             }
         }
 
-        private IEnumerable<IEntity> GetEntitiesAround(int centerX, int centerY, int dist)
+        private IEnumerable<Entity> GetEntitiesAround(int centerX, int centerY, int dist)
         {
             return _entityLayer.GetNear(centerX, centerY, dist).Where(entity => Dist(entity.X, entity.Y, centerX, centerY) <= dist);
         }
@@ -60,14 +60,14 @@ namespace PondSharp.Client.Pond
                 DoTick(entity);
         }
         
-        public override bool CanMoveTo(IEntity entity, int x, int y)
+        public override bool CanMoveTo(Entity entity, int x, int y)
             => Math.Abs(entity.X - x + entity.Y - y) <= 2 &&
                x >= MinX && x <= MaxX &&
                y >= MinY && y <= MaxY && 
                !(_entityLayer.GetAt(x, y)?.IsBlocking ?? false);
 
-        public override bool CanChangeIsBlocking(IEntity entity) => true;
-        public override bool CanCreateEntity<T>(IEntity entity) => true;
+        public override bool CanChangeIsBlocking(Entity entity) => true;
+        public override bool CanCreateEntity<T>(Entity entity) => true;
         
         public override T CreateEntity<T>(EntityOptions options)
         {
@@ -110,7 +110,7 @@ namespace PondSharp.Client.Pond
             }
         }
         
-        public override bool MoveTo(IEntity iEntity, int x, int y)
+        public override bool MoveTo(Entity iEntity, int x, int y)
         {
             if (!(iEntity is Entity entity)) return false;
             if (entity.X == x && entity.Y == y) return true;
@@ -121,7 +121,7 @@ namespace PondSharp.Client.Pond
             return true;
         }
 
-        public override IEnumerable<IEntity> GetVisibleEntities(IEntity entity) =>
+        public override IEnumerable<Entity> GetVisibleEntities(Entity entity) =>
             GetEntitiesAround(entity.X, entity.Y, entity.ViewDistance).Where(e => e.Id != entity.Id);
 
         public override bool DestroyEntity(Entity entity)

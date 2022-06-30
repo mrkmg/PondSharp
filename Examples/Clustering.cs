@@ -12,27 +12,28 @@ namespace PondSharp.Examples
     /// to dense, or it's too close to
     /// another entity.
     /// </summary>
-    [PondUserSpawnable]
+    [PondUserSpawnable(NewCount = 500)]
     public class Clustering : BaseEntity
     {
         private const int WanderingColor = 0xAAAA00;
         private const int JoiningColor = 0x00AA00; 
         private const int SeparatingColor = 0xAA0000;
 
-        [PondAdjustable(Min = 2, Max = 30, Name = "Group Radius")]
+        [PondAdjustable(Min = 2, Max = 100, Name = "Group Radius")]
         private static int GroupRadius { get; set; } = 5;
         
-        [PondAdjustable(Min = 2, Max = 30, Name = "View Radius")]
+        [PondAdjustable(Min = 2, Max = 100, Name = "View Radius")]
         private static int ViewRadius { get; set; } = 15;
         
-        [PondAdjustable(Min = 2, Max = 50, Name = "Min Group Count")]
+        [PondAdjustable(Min = 2, Max = 200, Name = "Min Group Count")]
         private static int MinGroupCount { get; set; } = 9;
 
-        [PondAdjustable(Min = 2, Max = 50, Name = "Max Group Count")]
+        [PondAdjustable(Min = 2, Max = 200, Name = "Max Group Count")]
         private static int MaxGroupCount { get; set; } = 18;
         
         public int? GroupColor { get; private set; }
 
+        private State _currentState = State.Wandering;
         private int _thinkCooldown;
         private bool _hasTarget;
 
@@ -42,9 +43,7 @@ namespace PondSharp.Examples
         protected override void OnCreated()
         {
             ChangeViewDistance(ViewRadius);
-            ChangeColor(WanderingColor);
-            ChooseRandomDirection();
-            _thinkCooldown = Random.Next(200);
+            DoWander();
         }
         
         protected override void Tick()
@@ -95,6 +94,7 @@ namespace PondSharp.Examples
             foreach (var entity in VisibleEntities)
             {
                 if (!(entity is Clustering e)) continue;
+                if (e._currentState == State.Wandering) continue;
                 
                 totalInView++;
                 inViewCenterX += e.X;
@@ -112,7 +112,10 @@ namespace PondSharp.Examples
             
             if (totalInView == 0)
             {
-                DoWander();
+                if (Random.Next(2) == 0)
+                    DoWander();
+                else
+                    DoResting();
                 return;
             }
             
@@ -148,14 +151,26 @@ namespace PondSharp.Examples
 
         private void DoLeaveGroup(int inViewCenterX, int inViewCenterY)
         {
+            _currentState = State.Separating;
             ChangeColor(SeparatingColor);
             // Move away from group center
             (ForceX, ForceY) = GetForceDirection(X - inViewCenterX, Y - inViewCenterY);
             _thinkCooldown = RndThinkDelay(100, 15, 100);
         }
 
+        private void DoResting()
+        {
+            _currentState = State.Resting;
+            ChangeColor(WanderingColor);
+            _hasTarget = false;
+            ForceX = 0;
+            ForceY = 0;
+            _thinkCooldown = RndThinkDelay(100, 2);
+        }
+
         private void DoGroupJoin(int? groupColor, int inViewCenterX, int inViewCenterY)
         {
+            _currentState = State.Resting;
             GroupColor = groupColor ?? RandomColor();
             ChangeColor(GroupColor.Value);
             (ForceX, ForceY) = (0, 0);
@@ -166,17 +181,19 @@ namespace PondSharp.Examples
 
         private void DoViewJoin(int inViewCenterX, int inViewCenterY)
         {
+            _currentState = State.Joining;
             ChangeColor(JoiningColor);
             // Move toward group center
             (ForceX, ForceY) = (0, 0);
             _hasTarget = true;
             SetMoveTowards(inViewCenterX, inViewCenterY);
-            _thinkCooldown = RndThinkDelay(10);
+            _thinkCooldown = RndThinkDelay(20);
         }
 
         private void DoWander()
         {
             _hasTarget = false;
+            _currentState = State.Wandering;
             ChangeColor(WanderingColor);
             ChooseRandomDirection();
             if (ForceX == 0 && ForceY == 0) throw new Exception("INVALID FORCE");
@@ -190,5 +207,15 @@ namespace PondSharp.Examples
             while (color.GetBrightness() < 0.65);
             return color.ToArgb();
         }
+
+        private enum State
+        {
+            Wandering,
+            Joining,
+            Separating,
+            Resting
+        };
     }
+    
+    
 }

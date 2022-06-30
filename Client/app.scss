@@ -17,6 +17,42 @@
     color: #5a6268;
 }
 
+.btn-group {
+    > .btn-group-vertical {
+        > .btn {
+            border-radius: 0 !important;
+        }
+
+        &:first-child > .btn {
+            &:first-child {
+                border-top-left-radius: $border-radius !important;;
+            }
+
+            &:last-child {
+                border-bottom-left-radius: $border-radius !important;;
+            }
+        }
+
+        &:last-child > .btn {
+            &:first-child {
+                border-top-right-radius: $border-radius !important;;
+            }
+
+            &:last-child {
+                border-bottom-right-radius: $border-radius !important;;
+            }
+        }
+    }
+}
+
+.btn-group-vertical > .btn-group {
+    &:first-child > .btn-group-vertical > .btn:last-child,
+    &:last-child > .btn-group-vertical > .btn:first-child, 
+    &:not(:first-child):not(:last-child) > .btn-group-vertical > .btn {
+        border-radius: 0 !important;
+    }
+}
+
 .input-count {
     flex: 0.3 1 !important;
 }

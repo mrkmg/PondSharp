@@ -21,7 +21,7 @@ namespace PondSharp.Examples
     /// and setting destinations for all the followers
     /// in that group. 
     /// </summary>
-    [PondDefaults(InitialCount = 500, NewCount = 100)]
+    [PondUserSpawnable(InitialCount = 300)]
     public class Stated : Entity
     {
         private int _destinationX;

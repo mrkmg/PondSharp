@@ -151,8 +151,14 @@ export class PondRenderer {
         const graphic = this.entities.get(id) as PIXI.Graphics;
         graphic.clear();
         graphic.beginFill(color);
-        graphic.drawCircle(this.gridSize/2, this.gridSize/2, this.gridSize/2);
+        if (this.gridSize < 6) {
+            graphic.drawRect(0, 0, this.gridSize, this.gridSize);
+        } else {
+            const radius = this.gridSize/2;
+            graphic.drawCircle(radius, radius, radius);
+        }
         graphic.endFill();
+
     }
     
     processEntityChangeRequestsRaw(pointer: any) {        

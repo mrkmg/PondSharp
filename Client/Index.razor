@@ -167,7 +167,7 @@
     private PondCanvas _canvas;
 #pragma warning restore 649
     
-    private int _gridSize = 6;
+    private int _gridSize = 2;
     private int _pondWidth = 400;
     private int _pondHeight = 300;
 
@@ -234,10 +234,10 @@
     private void ReadAssemblyInfo()
     {
         var types = _ideElement.GetTypesOf(typeof(IEntity));
-
+        
         _availableEntityTypes = types.Select(type =>
         {
-            var defaults = type.GetCustomAttribute<PondDefaultsAttribute>() ?? new();
+            var defaults = type.GetCustomAttribute<PondUserSpawnableAttribute>() ?? new();
             var adjustables = new List<AdjustableEntry>();
             var cType = type;
             while (cType is not null)
@@ -259,7 +259,7 @@
             return new AvailableEntityEntry
             {
                 Type = type,
-                Defaults = defaults,
+                UserSpawnable = defaults,
                 FullName = type.FullName,
                 ShortName = defaults.Name ?? type.FullName?.Split('.').Last(),
                 Adjustables = adjustables,
@@ -278,7 +278,7 @@
         _countToCreate.Clear();
         foreach (var availableEntity in _availableEntityTypes)
         {
-            _countToCreate.Add(availableEntity.FullName, availableEntity.Defaults.NewCount);
+            _countToCreate.Add(availableEntity.FullName, availableEntity.UserSpawnable.NewCount);
         }
     }
 
@@ -286,8 +286,8 @@
     {
         foreach (var availableEntity in _availableEntityTypes)
         {
-            if (availableEntity.Defaults.InitialCount > 0)
-                CreateEntity(availableEntity.FullName, availableEntity.Defaults.InitialCount);
+            if (availableEntity.UserSpawnable.InitialCount > 0)
+                CreateEntity(availableEntity.FullName, availableEntity.UserSpawnable.InitialCount);
         }
     }
 
@@ -307,10 +307,12 @@
     
     private async ValueTask ResetPondManager()
     {
+        Reset();
         _manager?.Dispose();
         _manager = null;
         await SetSize();
         _engine = new(_pondWidth, _pondHeight);
+        await _canvas.Resize();
         TryCreatePondManager();
         StartPond();
     }
@@ -398,7 +400,7 @@
         public string FullName;
         public string ShortName;
         public Type Type;
-        public PondDefaultsAttribute Defaults;
+        public PondUserSpawnableAttribute UserSpawnable;
         public List<AdjustableEntry> Adjustables;
     }
 

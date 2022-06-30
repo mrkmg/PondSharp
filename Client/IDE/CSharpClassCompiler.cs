@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using System.Security.Cryptography;
 using System.Text;
+using PondSharp.UserScripts;
 
 namespace PondSharp.Client.IDE
 {
@@ -116,13 +117,16 @@ namespace PondSharp.Client.IDE
 
         public IEnumerable<Type> AvailableInstances(Type targetType)
         {
-            if (_assembly is null) return Type.EmptyTypes;
+            if (_assembly is null) 
+                yield break;
 
-            return _assembly.GetTypes()
-                .Where(t => t.IsClass)
-                .Where(t => targetType.IsClass && t.IsSubclassOf(targetType) ||
-                            targetType.IsInterface && t.GetInterfaces().Contains(targetType))
-                .Where(t => !t.IsAbstract && t.IsPublic);
+            foreach (var t in _assembly.GetTypes())
+            {
+                if (t.IsClass && !t.IsAbstract && t.IsPublic && 
+                    ((targetType.IsClass && t.IsSubclassOf(targetType)) || (targetType.IsInterface && t.GetInterfaces().Contains(targetType))) &&
+                    t.GetCustomAttributes().Any(a => a is PondUserSpawnableAttribute)
+                   ) yield return t;
+            }
         }
 
         public T New<T>(string instanceName, params object[] args) where T : class

@@ -12,6 +12,7 @@ namespace PondSharp.Examples
     /// to dense, or it's too close to
     /// another entity.
     /// </summary>
+    [PondUserSpawnable]
     public class Clustering : BaseEntity
     {
         private const int WanderingColor = 0xAAAA00;

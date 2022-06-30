@@ -6,7 +6,7 @@ namespace PondSharp.Examples
     /// <summary>
     /// All entities follow one master entity.
     /// </summary>
-    [PondDefaults(InitialCount = 0, NewCount = 50)]
+    [PondUserSpawnable]
     public class Chase : BaseEntity
     {
         private static int? MasterEntityId;

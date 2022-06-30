@@ -6,7 +6,7 @@ namespace PondSharp.UserScripts
     /// Defines default parameters for the entities creation
     /// </summary>
     [AttributeUsage(AttributeTargets.Class)]
-    public class PondDefaultsAttribute : Attribute
+    public class PondUserSpawnableAttribute : Attribute
     {
         /// <summary>
         /// Default count for the "Create Entity" button on screen.

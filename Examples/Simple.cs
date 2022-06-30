@@ -6,7 +6,7 @@ namespace PondSharp.Examples
     /// <summary>
     /// The simplest example of an entity.
     /// </summary>
-    [PondDefaults(InitialCount = 0, NewCount = 500)]
+    [PondUserSpawnable]
     public class Simple : BaseEntity
     {
         [PondAdjustable(Min = 1, Max = 100, Name = "Speed")]

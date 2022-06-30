@@ -10,7 +10,7 @@ namespace PondSharp.Examples
     /// <summary>
     /// This entity moves randomly.
     /// </summary>
-    [PondDefaults(Name = "Burn Effect")]
+    [PondUserSpawnable(Name = "Burn Effect")]
     public class SelfExpiring : Simple
     {
         private static int StartAgeReal = 80;
@@ -73,34 +73,25 @@ namespace PondSharp.Examples
                 // ResetPower();
             
             base.Tick();
-
         }
-        
-        private static readonly (double, Color)[] ColorsTransitions =
-        {
-            (0, System.Drawing.Color.FromArgb(100, 0 , 1)),
-            (0.3, System.Drawing.Color.Firebrick),
-            (0.6, System.Drawing.Color.Yellow),
-            (0.9, System.Drawing.Color.FromArgb(50, 0, 1)),
-            (1, System.Drawing.Color.Black)
-        };
             
         private static List<int> Colors = CreateAgeColor();
-        
+
+        private static readonly Color[] TransitionColors =
+        {
+            System.Drawing.Color.FromArgb(100, 0, 1), 
+            System.Drawing.Color.Firebrick, 
+            System.Drawing.Color.Yellow, 
+            System.Drawing.Color.FromArgb(50, 0, 1), 
+            System.Drawing.Color.Black
+        };
+        private static readonly double[] TransitionRatios = { 0, 0.3, 0.6, 0.9 };
         private static List<int> CreateAgeColor()
         {
-            Debug.Assert(ColorsTransitions.Length > 1);
-            var colors = Enumerable.Empty<Color>();
-
-            for (var i = 0; i < ColorsTransitions.Length - 1; i++)
-            {
-                var (startPercentage, startColor) = ColorsTransitions[i];
-                var (nextPercentage, nextColor) = ColorsTransitions[i + 1];
-                var total = nextPercentage - startPercentage;
-                var count = (int)(total * StartAge);
-                colors = colors.Concat(GenerateSequence(startColor, nextColor, i == 0 ? count : count + 1).Skip(i == 0 ? 0 : 1));
-            }
-            return colors.Select(c => c.ToArgb()).ToList();
+            return ColorTransition.From(StartAge, TransitionColors, TransitionRatios)
+                .Colors()
+                .Select(c => c.ToArgb())
+                .ToList();
         }
         
         private static IEnumerable<Color> GenerateSequence(Color start, Color end, int colorCount)
